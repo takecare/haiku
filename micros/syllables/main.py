@@ -1,3 +1,4 @@
+from cgitb import reset
 from flask import Flask, abort, escape, request
 from functools import reduce
 import requests
@@ -32,12 +33,12 @@ def _word_not_found(doc) -> bool:
 
 
 def _query_word(word) -> int:
-    # TODO cache words to avoid hitting priberam a lot
+    # TODO cache words to avoid hitting priberam
     html = requests.get(f"{BASE_URL}/{escape(word)}")
     doc = lxml.html.fromstring(html.content)
     syallables = doc.xpath(SYLLABLES_XPATH)
     if _word_not_found(doc):
-        abort(404)
+        return 0
     return [s.strip() for s in syallables[0].text_content().split("·")]
 
 
@@ -54,12 +55,24 @@ def line(line):
     return {"count": len(reduce(lambda x, y: x + y, syllables)), "split": syllables}
 
 
-# TODO endpoint to parse a whole poem - i.e. X lines
-@app.route("/poem/<line>", methods=["POST"])
+@app.route("/poem", methods=["POST"])
 def poem():
-    # TODO request body
-    request.json
-    abort(404)
+    """
+    Expected request body format: { body: ["first line", ["second line"], ... }
+    """
+    lines = request.json["body"]
+    syllables = []
+    for line in lines:
+        words = line.split(" ")
+        syllables.append([_query_word(word) for word in words])
+    return {
+        "count": len(
+            reduce(
+                lambda x, y: x + y, [reduce(lambda x, y: x + y, s) for s in syllables]
+            )
+        ),
+        "split": syllables,
+    }
 
 
 @app.route("/", methods=["POST"])
