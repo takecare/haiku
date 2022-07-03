@@ -32,13 +32,13 @@ def _word_not_found(doc) -> bool:
     return True if len(not_found) > 0 else False
 
 
-def _query_word(word) -> int:
+def _query_word(word):
     # TODO cache words to avoid hitting priberam
     html = requests.get(f"{BASE_URL}/{escape(word)}")
     doc = lxml.html.fromstring(html.content)
     syallables = doc.xpath(SYLLABLES_XPATH)
     if _word_not_found(doc):
-        return 0
+        return []
     return [s.strip() for s in syallables[0].text_content().split("·")]
 
 
@@ -65,6 +65,7 @@ def poem():
     for line in lines:
         words = line.split(" ")
         syllables.append([_query_word(word) for word in words])
+
     return {
         "count": len(
             reduce(
