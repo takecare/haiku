@@ -1,4 +1,5 @@
 from cgitb import reset
+from typing import Dict, List
 from flask import Flask, abort, escape, request
 from functools import reduce
 import requests
@@ -32,7 +33,7 @@ def _word_not_found(doc) -> bool:
     return True if len(not_found) > 0 else False
 
 
-def _query_word(word):
+def _query_word(word) -> List[str]:
     # TODO cache words to avoid hitting priberam
     html = requests.get(f"{BASE_URL}/{escape(word)}")
     doc = lxml.html.fromstring(html.content)
@@ -43,20 +44,20 @@ def _query_word(word):
 
 
 @app.route("/word/<word>", methods=["GET"])
-def word(word):
+def word(word) -> Dict:
     syllables = _query_word(word)
     return {"count": len(syllables), "split": syllables}
 
 
 @app.route("/line/<line>", methods=["GET"])
-def line(line):
+def line(line) -> Dict:
     words = line.split(",")
     syllables = [_query_word(word) for word in words]
     return {"count": len(reduce(lambda x, y: x + y, syllables)), "split": syllables}
 
 
 @app.route("/poem", methods=["POST"])
-def poem():
+def poem() -> Dict:
     """
     Expected request body format: { body: ["first line", ["second line"], ... }
     """
@@ -74,11 +75,6 @@ def poem():
         ),
         "split": syllables,
     }
-
-
-@app.route("/", methods=["POST"])
-def teste():
-    return request.json
 
 
 @app.errorhandler(404)
