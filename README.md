@@ -1,5 +1,11 @@
 ## Haiku
 
+## Server
+
+At the moment we have only one micro/cloud function. It's our whole API,
+providing endpoints to determine the number of syllables in a word, line or
+set of lines.
+
 ### Local development
 
 #### Venv
@@ -21,7 +27,9 @@ This project uses mypy. Run it with `make typecheck`.
 ### Deployments
 
 We deploy on deta. Deta will look for dependencies declared in
-`requirements.txt` so make sure you have it (it's already in the repo).
+`requirements.txt` so make sure you have this file (it's already in the repo).
 
 To deploy a micro run `make deploy`. This will also update enviroment variables
 on deta. These are stored in `.env.prod`.
+
+## Android
