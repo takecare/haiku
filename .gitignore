@@ -1,4 +1,7 @@
+# python
 venv/
 __pycache__
-.env.prod
+.mypy_cache/
 
+# env vars
+.env.prod
