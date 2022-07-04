@@ -9,6 +9,7 @@ run:
 	flask run
 
 deploy:
+	deta update -e .env.prod
 	deta deploy
 
 typecheck:
