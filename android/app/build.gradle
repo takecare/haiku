@@ -21,12 +21,27 @@ android {
         }
     }
 
+    flavorDimensions "environment"
+    productFlavors {
+        local {
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:5000\"")
+        }
+        production {
+            buildConfigField("String", "BASE_URL", "\"https://syllables.deta.dev\"")
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

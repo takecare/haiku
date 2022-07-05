@@ -1,7 +1,6 @@
 package dev.ruibot.haiku
 
 import android.os.Bundle
-import android.os.Message
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,89 +16,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import dagger.Binds
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.components.SingletonComponent
+import dev.ruibot.haiku.data.HaikuRepository
+import dev.ruibot.haiku.data.Syllables
 import dev.ruibot.haiku.ui.theme.HaikuTheme
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import okhttp3.OkHttp
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.create
-import java.lang.Exception
-import java.net.ConnectException
 import javax.inject.Inject
-
-@Module
-@InstallIn(SingletonComponent::class)
-object DataModule {
-
-    @Provides
-    fun httpLoggingInterceptor(): HttpLoggingInterceptor =
-        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-
-    @Provides
-    fun provideOkHttpClient(httpLoggingInterceptor: HttpLoggingInterceptor): OkHttpClient =
-        OkHttpClient.Builder()
-            .addInterceptor(httpLoggingInterceptor)
-            .build()
-
-    @Provides
-    fun provideHaikuService(okHttpClient: OkHttpClient): HaikuService =
-        Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:5000")
-            .client(okHttpClient)
-            .addConverterFactory(MoshiConverterFactory.create())
-            .build()
-            .create()
-}
-
-class HaikuRepository @Inject constructor(
-    private val service: HaikuService
-) {
-    // TODO kotlin flows
-    // TODO we probably only need getPoem()
-    // TODO database: expose flow and method to fetch data (that also writes to db, updating the flow)
-
-    // https://developer.android.com/kotlin/flow
-    // https://developer.android.com/kotlin/flow/stateflow-and-sharedflow
-
-    suspend fun getWord(word: String): Result<Word> {
-        return try {
-            return Result.success(service.word(word))
-        } catch (exception: Exception) {
-            Result.failure(exception)
-        }
-    }
-
-    suspend fun getLine(words: String): Result<List<Word>> {
-        return try {
-            return Result.success(service.line(words))
-        } catch (exception: Exception) {
-            Result.failure(exception)
-        }
-    }
-
-    suspend fun getPoem(poem: List<String>): Result<Syllables> {
-        return try {
-            val words = service.poem(Poem(poem))
-            return Result.success(words)
-        } catch (exception: Exception) {
-            Result.failure(exception)
-        }
-    }
-}
 
 data class UiSyllables( // TODO better name
     val totalCount: Int = 0,

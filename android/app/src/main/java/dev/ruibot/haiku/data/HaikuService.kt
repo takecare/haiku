@@ -1,4 +1,4 @@
-package dev.ruibot.haiku
+package dev.ruibot.haiku.data
 
 import com.squareup.moshi.Json
 import retrofit2.http.Body
