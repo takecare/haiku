@@ -1,10 +1,8 @@
-from cgitb import reset
-from re import I
-from typing import Callable, Dict, List
-from flask import Flask, abort, escape, request
-from functools import reduce
 import requests
 import lxml.html
+from typing import Dict, List
+from flask import Flask, abort, escape, request
+from functools import reduce
 from lxml.html import HtmlElement
 from requests import Response
 
@@ -46,11 +44,10 @@ def _query_word(word) -> List[str]:
 
     words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
 
-    # we filter out repeated words and empty strings
+    # we filter out repeated words and empty strings from priberam
     filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
 
-    # TODO log if len(filtered) > 1
-
+    # TODO log/monitor if len(filtered) > 1
     return [w.strip() for w in filtered[0].split("·")]
 
 
@@ -85,9 +82,6 @@ def poem() -> Dict:
                 if len(word) > 0 and len(syllables := _query_word(word)) > 0
             ]
         )
-    flatten_lines: Callable[[list[str], list[str]], list[str]] = (
-        lambda acc, flattened_line: acc + flattened_line
-    )
     initial: list[str] = []
     return {
         "count": len(
