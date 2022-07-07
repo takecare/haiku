@@ -1,9 +1,12 @@
 from cgitb import reset
-from typing import Dict, List
+from re import I
+from typing import Callable, Dict, List
 from flask import Flask, abort, escape, request
 from functools import reduce
 import requests
 import lxml.html
+from lxml.html import HtmlElement
+from requests import Response
 
 BASE_URL = "https://dicionario.priberam.org/"
 
@@ -11,7 +14,8 @@ NOT_FOUND_CSS_CLASS = "alert alert-info"
 NOT_FOUND_XPATH = f'.//div[@class="{NOT_FOUND_CSS_CLASS}"]'
 
 SYLLABLES_CSS_CLASS = "verbeteh1"
-SYLLABLES_XPATH = f'.//span[@class="{SYLLABLES_CSS_CLASS}"]/h2/span/span'
+CONTENT_CSS_CLASS = "pb-main-content"
+SYLLABLES_XPATH = f'.//div[@class="{CONTENT_CSS_CLASS}"]//span[@class="{SYLLABLES_CSS_CLASS}"]/h2/span/span'
 
 app = Flask(__name__)
 app.debug = True  # TODO read from env
@@ -35,12 +39,19 @@ def _word_not_found(doc) -> bool:
 
 def _query_word(word) -> List[str]:
     # TODO cache words to avoid hitting priberam
-    html = requests.get(f"{BASE_URL}/{escape(word)}")
-    doc = lxml.html.fromstring(html.content)
-    syallables = doc.xpath(SYLLABLES_XPATH)
+    html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
+    doc: HtmlElement = lxml.html.fromstring(html.content)
     if _word_not_found(doc):
         return []
-    return [s.strip() for s in syallables[0].text_content().split("·")]
+
+    words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
+
+    # we filter out repeated words and empty strings
+    filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
+
+    # TODO log if len(filtered) > 1
+
+    return [w.strip() for w in filtered[0].split("·")]
 
 
 @app.route("/word/<word>", methods=["GET"])
@@ -52,28 +63,41 @@ def word(word) -> Dict:
 @app.route("/line/<line>", methods=["GET"])
 def line(line) -> Dict:
     words = line.split(",")
-    syllables = [_query_word(word) for word in words]
+    filtered = [word for word in words if len(word) > 0]
+    syllables = [_query_word(word) for word in filtered]
     return {"count": len(reduce(lambda x, y: x + y, syllables)), "split": syllables}
 
 
 @app.route("/poem", methods=["POST"])
 def poem() -> Dict:
     """
-    Expected request body format: { body: ["first line", ["second line"], ... }
+    Expected request body format: { body: ["primeira linha", "segunda linha", ...] }
     """
     lines = request.json["body"]
-    syllables = []
+    line_syllables: list[list[list[str]]] = []
+    syllables: list[str]
     for line in lines:
         words = line.split(" ")
-        syllables.append([_query_word(word) for word in words])
-
+        line_syllables.append(
+            [
+                syllables
+                for word in words
+                if len(word) > 0 and len(syllables := _query_word(word)) > 0
+            ]
+        )
+    flatten_lines: Callable[[list[str], list[str]], list[str]] = (
+        lambda acc, flattened_line: acc + flattened_line
+    )
+    initial: list[str] = []
     return {
         "count": len(
             reduce(
-                lambda x, y: x + y, [reduce(lambda x, y: x + y, s) for s in syllables]
+                lambda acc, flattened_line: acc + flattened_line,
+                [reduce(lambda acc, s: acc + s, line) for line in line_syllables],
+                initial,
             )
         ),
-        "split": syllables,
+        "split": line_syllables,
     }
 
 
