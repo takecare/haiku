@@ -33,3 +33,10 @@ To deploy a micro run `make deploy`. This will also update enviroment variables
 on deta. These are stored in `.env.prod`.
 
 ## Android
+
+TODO
+
+- Coroutines + StateFlow
+- ViewModel
+- Compose
+- Navigation
