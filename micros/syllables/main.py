@@ -27,6 +27,8 @@ def root():
     return ""
 
 
+# TODO add unit tests
+
 # TODO handle suffixes and prefixes?
 # for https://dicionario.priberam.org/ola the first result is a suffix but there
 # is a second result that seems valid. we need a way to parse through results
@@ -57,7 +59,13 @@ def _query_word(word) -> List[str]:
     if len(filtered) > 1:
         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
 
-    return [] if len(filtered) == 0 else [w.strip() for w in filtered[0].split("·")]
+    # select first item as we may get other items
+    word = filtered[0]
+    return (
+        []
+        if len(filtered) == 0
+        else [syllable.strip() for syllable in filtered[0].split("·")]
+    )
 
 
 @app.route("/word/<word>", methods=["GET"])
@@ -81,6 +89,8 @@ def poem() -> Dict:
     """
     lines = request.json["body"]
     poem_syllables: list[list[list[str]]] = []
+
+    # determine all syllables in all lines of the poem, keeping the correct number of lines
     for line in lines:
         words_in_line = line.split(" ")
         line_syllables = [
@@ -89,6 +99,7 @@ def poem() -> Dict:
             if len(word) > 0 and len(syllables := _query_word(word)) > 0
         ]
         poem_syllables.append(line_syllables)
+
     initial: list[str] = []
     initial_line: list[str] = []
     return {

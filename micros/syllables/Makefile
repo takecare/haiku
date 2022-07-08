@@ -8,9 +8,15 @@ install-dev: requirements_dev.txt
 run:
 	flask run
 
+typecheck:
+	mypy *.py
+
 deploy:
 	deta update -e .env.prod
 	deta deploy
 
-typecheck:
-	mypy *.py
+logs: # enable, disable, open
+	deta visor $(filter-out $@,$(MAKECMDGOALS))
+
+%:
+	@:
