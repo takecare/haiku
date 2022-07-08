@@ -32,6 +32,10 @@ def root():
 # is a second result that seems valid. we need a way to parse through results
 # when there's more than one
 
+# TODO consider returning unrecognised words
+# returning unrecognised words will allow the frontend do signal them to the
+# user so they can understand what's happening
+
 
 def _word_not_found(doc) -> bool:
     not_found = doc.xpath(NOT_FOUND_XPATH)
@@ -53,7 +57,7 @@ def _query_word(word) -> List[str]:
     if len(filtered) > 1:
         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
 
-    return [w.strip() for w in filtered[0].split("·")]
+    return [] if len(filtered) == 0 else [w.strip() for w in filtered[0].split("·")]
 
 
 @app.route("/word/<word>", methods=["GET"])
