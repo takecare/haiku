@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.ruibot.haiku.data.HaikuRepository
-import dev.ruibot.haiku.data.Syllables
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,11 +12,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class LoadingState {
+    Idle,
+    Loading,
+    Error,
+}
+
+data class LineState(
+    val text: String = "",
+    val state: LoadingState = LoadingState.Idle,
+    //    val syllableCount: Int = 0,
+    val syllables: List<List<String>> = emptyList(),
+) {
+    val syllableCount: Int
+        get() =
+            if (syllables.isEmpty()) 0
+            else syllables.map { it.size }.reduce { acc, i -> acc + i }
+}
+
 data class PoemState(
-    val lines: List<String> = listOf("", "", ""),
+    //    val lines: List<String> = listOf("", "", ""),
     val totalCount: Int = 0,
-    val countPerLine: List<Int> = lines.map { 0 },
-    val syllables: List<List<List<String>>> = lines.map { listOf() }
+    //    val countPerLine: List<Int> = lines.map { 0 },
+    //    val syllables: List<List<List<String>>> = lines.map { listOf() }
+    val lines: List<LineState> = listOf(LineState(), LineState(), LineState())
+
 )
 
 sealed class UiState { // UI state for the "write" screen
@@ -26,7 +45,7 @@ sealed class UiState { // UI state for the "write" screen
     data class Error(val poemState: PoemState, val message: String) : UiState()
 }
 
-private fun UiState.poemState(): PoemState =
+private fun UiState.poemState() =
     when (this) {
         is UiState.Loading -> {
             this.poemState
@@ -68,7 +87,7 @@ class MainViewModel @Inject constructor(
 
         // we then fetch the syllables for this new input
         // TODO debounce this to avoid too many requests
-        fetchSyllablesFor(poemState.lines)
+        fetchSyllablesFor(poemState)
 
         when (val state = _uiState.value) {
             is UiState.Content -> {
@@ -88,26 +107,34 @@ class MainViewModel @Inject constructor(
         val currentInput = syllables.lines[id]
         return syllables.copy(
             lines = syllables.lines.toMutableList().apply {
-                set(id, newInput)
+                set(id, currentInput.copy(text = newInput, state = LoadingState.Loading))
             }
         )
     }
 
-    private fun fetchSyllablesFor(input: List<String>) {
+    private fun fetchSyllablesFor(input: PoemState) {
         fetchSyllablesJob?.cancel()
         fetchSyllablesJob = viewModelScope.launch {
-            val result: Result<Syllables> = repository.getPoem(input)
+            val result = repository.getPoem(input.lines.map { it.text })
             when {
                 result.isSuccess -> {
                     val syllables = result.getOrNull()
                     val totalCount = syllables?.count ?: 0
-                    val countPerLine = syllables?.split?.map { line -> line.flatten().filter { it.isNotEmpty() } }?.map { it.size } ?: emptyList()
+                    // val countPerLine = syllables?.split?.map { line -> line.flatten().filter { it.isNotEmpty() } }?.map { it.size } ?: emptyList()
                     val split = syllables?.split ?: emptyList()
+                    val currentLines = _uiState.value.poemState().lines
 
                     val poemState = _uiState.value.poemState().copy(
                         totalCount = totalCount,
-                        countPerLine = countPerLine,
-                        syllables = split
+                        lines = split.mapIndexed { i, lineSplit ->
+                            LineState(
+                                text = currentLines[i].text,
+                                syllables = lineSplit,
+                                state = LoadingState.Idle,
+                            )
+                        }
+                        // countPerLine = countPerLine,
+                        // syllables = split
                     )
 
                     _uiState.value = when (_uiState.value) {
@@ -120,6 +147,8 @@ class MainViewModel @Inject constructor(
                     val exception = result.exceptionOrNull()
                     val poemState = _uiState.value.poemState()
 
+                    // TODO how to map error to specific line?
+
                     if (exception !is CancellationException) {
                         Log.e("ViewModel", "OTHER EXCEPTION: $exception")
                         _uiState.value = UiState.Error(
@@ -127,7 +156,7 @@ class MainViewModel @Inject constructor(
                             message = result.exceptionOrNull()?.message ?: "Unknown error"
                         )
                     } else {
-                        Log.e("ViewModel", "CANCELLATION EXCEPTION: $exception")
+                        // Log.e("ViewModel", "CANCELLATION EXCEPTION: $exception")
                     }
                 }
             }
