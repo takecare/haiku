@@ -7,7 +7,7 @@ alphabet - e.g. "ó", "ç", "é", etc. Writing "olá" or "ónibus" is therefore
 different from writing "ola" and "onibus". So, words missing accents where they
 are required are fundamentally different from the ones that have them ("ola" vs
 "olá"), or they might not even be words at all (like "onibus"). This service is
-not yet ready to support this sort of cases.
+not yet ready to support this sort of cases, so accents are required.
 
 ## Server
 
@@ -20,6 +20,9 @@ API keys in the future). It is served over HTTPS, managed by Deta.
 
 It's our whole API, providing endpoints to determine the number of syllables in
 a word, line or set of lines.
+
+We don't rely on any WSGI server as Deta has its own, which wraps every micro
+it runs.
 
 ### Local development
 
