@@ -61,25 +61,16 @@ fun MainScreen(viewModel: MainViewModel) {
     val lines = when (state) {
         is UiState.Content -> {
             val content = state as UiState.Content
-            val poemState = content.poemState
-            // content.poemState.lines.zip(syllables.countPerLine)
-            // content.poemState.lines.map { Pair(it.text, it.syllableCount) }
             content.poemState.lines
         }
         is UiState.Error -> {
             Log.d("ViewModel", "> error ui state")
             val error = state as UiState.Error
-            val poemState = error.poemState
-            // error.poemState.lines.zip(syllables.countPerLine)
-            // error.poemState.lines.map { Pair(it.text, it.syllableCount) }
             error.poemState.lines
         }
         is UiState.Loading -> {
             Log.d("ViewModel", "> loading ui state")
             val loading = state as UiState.Error
-            val poemState = loading.poemState
-            // loading.poemState.lines.zip(syllables.countPerLine)
-            // loading.poemState.lines.map { Pair(it.text, it.syllableCount) }
             loading.poemState.lines
         }
     }
@@ -98,8 +89,7 @@ fun MainScreen(viewModel: MainViewModel) {
 @Composable
 fun Lines(
     modifier: Modifier = Modifier,
-//    lines: List<Pair<String, Int>> = emptyList(), // List<Pair<Text, SyllableCount>>
-    lines: List<LineState> = emptyList(), // List<Pair<Text, SyllableCount>>
+    lines: List<LineState> = emptyList(),
     onValueChange: (Int, String) -> Unit = { _, _ -> }
 ) {
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -139,7 +129,6 @@ fun Line(
         Row(
             modifier = modifier.fillMaxWidth(fraction = 1f),
             horizontalArrangement = Arrangement.Center
-            //            contentAlignment = Alignment.Center
         ) {
             SyllableCount(count = line.syllableCount, state = line.state)
         }

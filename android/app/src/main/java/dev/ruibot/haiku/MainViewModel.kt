@@ -21,7 +21,6 @@ enum class LoadingState {
 data class LineState(
     val text: String = "",
     val state: LoadingState = LoadingState.Idle,
-    //    val syllableCount: Int = 0,
     val syllables: List<List<String>> = emptyList(),
 ) {
     val syllableCount: Int
@@ -31,10 +30,7 @@ data class LineState(
 }
 
 data class PoemState(
-    //    val lines: List<String> = listOf("", "", ""),
     val totalCount: Int = 0,
-    //    val countPerLine: List<Int> = lines.map { 0 },
-    //    val syllables: List<List<List<String>>> = lines.map { listOf() }
     val lines: List<LineState> = listOf(LineState(), LineState(), LineState())
 
 )
@@ -120,7 +116,6 @@ class MainViewModel @Inject constructor(
                 result.isSuccess -> {
                     val syllables = result.getOrNull()
                     val totalCount = syllables?.count ?: 0
-                    // val countPerLine = syllables?.split?.map { line -> line.flatten().filter { it.isNotEmpty() } }?.map { it.size } ?: emptyList()
                     val split = syllables?.split ?: emptyList()
                     val currentLines = _uiState.value.poemState().lines
 
@@ -133,8 +128,6 @@ class MainViewModel @Inject constructor(
                                 state = LoadingState.Idle,
                             )
                         }
-                        // countPerLine = countPerLine,
-                        // syllables = split
                     )
 
                     _uiState.value = when (_uiState.value) {
