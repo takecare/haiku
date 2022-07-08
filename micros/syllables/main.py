@@ -36,7 +36,14 @@ def root():
 
 # TODO consider returning unrecognised words
 # returning unrecognised words will allow the frontend do signal them to the
-# user so they can understand what's happening
+# user so they can understand what's happening - e.g. if user types "amigoz",
+# it is an urecognised word but it is also a typo. the backend can return it
+# so it is flagged on the frontend
+
+# TODO consider returning suggestions
+# when querying for some words priberam returns suggestions (e.g. "onibus" and
+# "amigoz"). we should return a list of suggestions for each unrecognised word
+# that has them
 
 
 def _word_not_found(doc) -> bool:
@@ -60,7 +67,6 @@ def _query_word(word) -> List[str]:
         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
 
     # select first item as we may get other items
-    word = filtered[0]
     return (
         []
         if len(filtered) == 0

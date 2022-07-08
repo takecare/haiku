@@ -8,3 +8,6 @@ class Monitor:
     def log(self, message: str):
         if self.flask_app.debug:
             print(message)
+
+
+# TODO proper monitoring (https://docs.deta.sh/docs/micros/visor)
