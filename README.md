@@ -6,8 +6,8 @@ Note: Portuguese makes heavy usage of characters that are not in the English
 alphabet - e.g. "ó", "ç", "é", etc. Writing "olá" or "ónibus" is therefore
 different from writing "ola" and "onibus". So, words missing accents where they
 are required are fundamentally different from the ones that have them ("ola" vs
-"olá"), or they might not even be words (like "onibus"). This service is not yet
-ready to support this sort of cases.
+"olá"), or they might not even be words at all (like "onibus"). This service is
+not yet ready to support this sort of cases.
 
 ## Server
 
