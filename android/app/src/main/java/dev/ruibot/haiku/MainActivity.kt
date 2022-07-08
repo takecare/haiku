@@ -4,83 +4,37 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults.textFieldColors
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.ruibot.haiku.data.HaikuRepository
-import dev.ruibot.haiku.data.Syllables
 import dev.ruibot.haiku.ui.theme.HaikuTheme
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-data class UiSyllables( // TODO better name
-    val totalCount: Int = 0,
-    val countPerLine: List<Int> = emptyList(),
-    val syllables: List<List<String>> = emptyList()
-)
-
-sealed class WriteUiState {
-    object Loading : WriteUiState()
-    data class Content(val syllables: UiSyllables) : WriteUiState()
-    data class Error(val message: String) : WriteUiState()
-}
-
-@HiltViewModel
-class MainViewModel @Inject constructor(
-    private val repository: HaikuRepository
-) : ViewModel() {
-
-    // https://proandroiddev.com/livedata-vs-sharedflow-and-stateflow-in-mvvm-and-mvi-architecture-57aad108816d
-    // https://medium.com/androiddevelopers/a-safer-way-to-collect-flows-from-android-uis-23080b1f8bda
-
-    private val _uiState = MutableStateFlow<WriteUiState>(WriteUiState.Content(UiSyllables()))
-    val uiState: StateFlow<WriteUiState> = _uiState
-
-//    private val _event: MutableSharedFlow<Event> = MutableSharedFlow<Event>()
-//    val event = _event.asSharedFlow()
-
-    init {
-        _uiState.value = WriteUiState.Loading
-        // TODO get poem loaded from db
-//        viewModelScope.launch {
-//            repository.getPoem(listOf("palavra"))
-//        }
-    }
-
-    fun load(input: List<String>) {
-        viewModelScope.launch {
-            val result: Result<Syllables> = repository.getPoem(input)
-            when {
-                result.isSuccess -> {
-                    Log.d("ViewModel", result.toString())
-                    val totalCount = result.getOrNull()?.count ?: 0
-                    val countPerLine = result.getOrNull()?.split?.map { it.size } ?: emptyList()
-                    val split = result.getOrNull()?.split ?: emptyList()
-                    _uiState.value = WriteUiState.Content(
-                        UiSyllables(totalCount, countPerLine, split)
-                    )
-                }
-                result.isFailure -> {
-                    // TODO emit error
-                    Log.e("ViewModel", result.toString())
-                }
-            }
-        }
-    }
-}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -93,36 +47,155 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
-fun Screen(content: @Composable() () -> Unit) {
-    HaikuTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-            content()
+fun MainScreen(viewModel: MainViewModel) {
+
+    // https://medium.com/tech-takeaways/how-to-safely-collect-flows-lifecycle-aware-in-jetpack-compose-a-new-approach-ed20ead25be9
+    // https://proandroiddev.com/how-to-collect-flows-lifecycle-aware-in-jetpack-compose-babd53582d0b
+    val state: UiState by viewModel.uiState.collectAsStateWithLifecycle(
+        initialValue = UiState.Content(PoemState())
+    )
+
+    val lines: List<Pair<String, Int>> = when (state) {
+        is UiState.Content -> {
+            val content = state as UiState.Content
+            val syllables = content.poemState
+            Log.d("ViewModel", "content ui state: ${content.poemState.lines.zip(syllables.countPerLine)}")
+            content.poemState.lines.zip(syllables.countPerLine)
+        }
+        is UiState.Error -> {
+            Log.d("ViewModel", "> error ui state")
+            val error = state as UiState.Error
+            val syllables = error.poemState
+            error.poemState.lines.zip(syllables.countPerLine)
+        }
+        is UiState.Loading -> {
+            Log.d("ViewModel", "> loading ui state")
+            val loading = state as UiState.Error
+            val syllables = loading.poemState
+            loading.poemState.lines.zip(syllables.countPerLine)
+        }
+    }
+
+    Screen(title = "Haiku: Compose", onActionClicked = { viewModel.reset() }) {
+        Column {
+            Lines(
+                lines = lines,
+                onValueChange = { id, input -> viewModel.inputChanged(id, input) },
+            )
         }
     }
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
-    Screen {
-        // TODO get content from text inputs
-        Greeting("Android", onClick = { viewModel.load(listOf("primeira linha", "segunda linha")) })
+fun Screen(
+    modifier: Modifier = Modifier,
+    title: String,
+    onMenuClick: () -> Unit = {},
+    onActionClicked: () -> Unit = {},
+    content: @Composable() () -> Unit
+) {
+    HaikuTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+            Column() {
+                AppBar(
+                    title = title,
+                    onMenuClick = onMenuClick,
+                    onActionClicked = onActionClicked,
+                )
+                Column(modifier = modifier.padding(16.dp)) {
+                    content()
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun Greeting(name: String, onClick: () -> Unit) {
-    Column {
-        Button(onClick = onClick) {
-            Text(text = "Hello $name!")
+fun AppBar(
+    modifier: Modifier = Modifier,
+    title: String = "Haiku",
+    onMenuClick: () -> Unit = {},
+    onActionClicked: () -> Unit = {}
+) {
+    TopAppBar(
+        modifier = modifier,
+        title = { Text(title) },
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Filled.Menu, contentDescription = null)
+            }
+        },
+        actions = {
+            IconButton(onClick = onActionClicked) {
+                Icon(Icons.Filled.Favorite, contentDescription = "Localized action description")
+            }
+        }
+    )
+}
+
+@Composable
+fun Lines(
+    modifier: Modifier = Modifier,
+    lines: List<Pair<String, Int>> = emptyList(), // List<Pair<Text, SyllableCount>>
+    onValueChange: (Int, String) -> Unit = { _, _ -> }
+) {
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+        lines.forEachIndexed { index, pair ->
+            Line(modifier, pair.first, pair.second, onValueChange = { onValueChange(index, it) })
+        }
+        // TODO button to add one more line
+    }
+}
+
+@Composable
+fun Line(
+    modifier: Modifier = Modifier,
+    text: String = "",
+    count: Int = 0,
+    onValueChange: (String) -> Unit = {}
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextField(
+            modifier = modifier.fillMaxWidth(fraction = 0.9f),
+            singleLine = true,
+            maxLines = 1,
+            visualTransformation = VisualTransformation.None,
+            colors = textFieldColors(
+                backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f)
+            ),
+            value = text,
+            onValueChange = onValueChange
+        )
+        Row(
+            modifier = modifier.fillMaxWidth(fraction = 1f),
+            horizontalArrangement = Arrangement.Center
+            //            contentAlignment = Alignment.Center
+        ) {
+            Text("$count")
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
+fun LinesPreview() {
+    Lines(
+        lines = listOf(Pair("linha", 2), Pair("outra linha", 4))
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
 fun DefaultPreview() {
-    Screen {
-        Greeting("Android", onClick = { })
+    Screen(title = "Haiku: Compose") {
+        Lines(
+            lines = listOf(Pair("", 0), Pair("", 0))
+        )
     }
 }

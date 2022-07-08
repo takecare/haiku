@@ -5,6 +5,8 @@ plugins {
     id 'dagger.hilt.android.plugin'
 }
 
+// https://developer.android.com/studio/build/gradle-tips
+
 android {
     compileSdk 32
 
@@ -21,6 +23,7 @@ android {
         }
     }
 
+    // https://developer.android.com/studio/build/build-variants
     flavorDimensions "environment"
     productFlavors {
         local {
@@ -30,7 +33,6 @@ android {
             buildConfigField("String", "BASE_URL", "\"https://syllables.deta.dev\"")
         }
     }
-
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
@@ -63,7 +65,6 @@ android {
 }
 
 dependencies {
-
     implementation 'androidx.core:core-ktx:1.8.0'
 
     implementation "com.google.dagger:hilt-android:$hilt_version"
@@ -74,15 +75,13 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation 'androidx.activity:activity-compose:1.5.0'
 
-    //
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.0'
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version"
 
-    //
     implementation "androidx.recyclerview:recyclerview:1.2.1"
 
-    //
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.2'
     implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.2'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'

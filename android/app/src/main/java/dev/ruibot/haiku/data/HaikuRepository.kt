@@ -6,7 +6,6 @@ import javax.inject.Inject
 class HaikuRepository @Inject constructor(
     private val service: HaikuService
 ) {
-    // TODO kotlin flows
     // TODO we probably only need getPoem()
     // TODO database: expose flow and method to fetch data (that also writes to db, updating the flow)
 
@@ -29,9 +28,10 @@ class HaikuRepository @Inject constructor(
         }
     }
 
-    suspend fun getPoem(poem: List<String>): Result<Syllables> {
+    suspend fun getPoem(lines: List<String>): Result<Syllables> {
         return try {
-            val words = service.poem(Poem(poem))
+            val poem = Poem(lines.map { it.trim() })
+            val words = service.poem(poem)
             return Result.success(words)
         } catch (exception: Exception) {
             Result.failure(exception)

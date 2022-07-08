@@ -13,7 +13,7 @@ data class Word(
 
 data class Syllables(
     @field:Json(name = "count") val count: Int,
-    @field:Json(name = "split") val split: List<List<String>>
+    @field:Json(name = "split") val split: List<List<List<String>>>
 )
 
 data class Poem(
