@@ -6,6 +6,8 @@ from functools import reduce
 from lxml.html import HtmlElement
 from requests import Response
 
+from monitoring import Monitor
+
 BASE_URL = "https://dicionario.priberam.org/"
 
 NOT_FOUND_CSS_CLASS = "alert alert-info"
@@ -17,6 +19,7 @@ SYLLABLES_XPATH = f'.//div[@class="{CONTENT_CSS_CLASS}"]//span[@class="{SYLLABLE
 
 app = Flask(__name__)
 app.debug = True  # TODO read from env
+monitor = Monitor(app)
 
 
 @app.route("/", methods=["GET"])
@@ -47,7 +50,9 @@ def _query_word(word) -> List[str]:
     # we filter out repeated words and empty strings from priberam
     filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
 
-    # TODO log/monitor if len(filtered) > 1
+    if len(filtered) > 1:
+        monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
+
     return [w.strip() for w in filtered[0].split("·")]
 
 
@@ -71,27 +76,29 @@ def poem() -> Dict:
     Expected request body format: { body: ["primeira linha", "segunda linha", ...] }
     """
     lines = request.json["body"]
-    line_syllables: list[list[list[str]]] = []
-    syllables: list[str]
+    poem_syllables: list[list[list[str]]] = []
     for line in lines:
-        words = line.split(" ")
-        line_syllables.append(
-            [
-                syllables
-                for word in words
-                if len(word) > 0 and len(syllables := _query_word(word)) > 0
-            ]
-        )
+        words_in_line = line.split(" ")
+        line_syllables = [
+            syllables
+            for word in words_in_line
+            if len(word) > 0 and len(syllables := _query_word(word)) > 0
+        ]
+        poem_syllables.append(line_syllables)
     initial: list[str] = []
+    initial_line: list[str] = []
     return {
         "count": len(
             reduce(
                 lambda acc, flattened_line: acc + flattened_line,
-                [reduce(lambda acc, s: acc + s, line) for line in line_syllables],
+                [
+                    reduce(lambda acc, s: acc + s, line, initial_line)
+                    for line in poem_syllables
+                ],
                 initial,
             )
         ),
-        "split": line_syllables,
+        "split": poem_syllables,
     }
 
 
