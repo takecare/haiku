@@ -11,6 +11,9 @@ run:
 typecheck:
 	mypy *.py
 
+format:
+	black ./
+
 deploy:
 	deta update -e .env.prod
 	deta deploy
@@ -18,5 +21,7 @@ deploy:
 logs: # enable, disable, open
 	deta visor $(filter-out $@,$(MAKECMDGOALS))
 
+# catch-all to avoid make printing out errors for commands with parameters
+# e.g. "make logs enable"
 %:
 	@:
