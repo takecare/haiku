@@ -1,12 +1,21 @@
 ## Haiku
 
+A tool to help you write Haikus in 🇵🇹 PT-PT and 🇧🇷 PT-BR.
+
+Note: Portuguese makes heavy usage of characters that are not in the English
+alphabet - e.g. "ó", "ç", "é", etc. Writing "olá" or "ónibus" is therefore
+different from writing "ola" and "onibus". So, words missing accents where they
+are required are fundamentally different from the ones that have them ("ola" vs
+"olá"), or they might not even be words (like "onibus"). This service is not yet
+ready to support this sort of cases.
+
 ## Server
 
 The enterity of the infrastructure is on Deta, requiring little to no
 intervention on our end.
 
-At the moment we have only one micro/cloud function, named `syllables`. At the
-moment it requires no authentication whatsoever (although we may be adding
+At the moment we have only one micro/cloud function, named `syllables`. It
+currently requires no authentication whatsoever (although we may be adding
 API keys in the future). It is served over HTTPS, managed by Deta.
 
 It's our whole API, providing endpoints to determine the number of syllables in
