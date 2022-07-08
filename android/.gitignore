@@ -3,11 +3,14 @@
 /local.properties
 /.idea/caches
 /.idea/libraries
+/.idea/inspectionProfiles
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
+/.idea/kotlinScripting.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetDropDown.xml
 .DS_Store
 /build
 /captures
