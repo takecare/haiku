@@ -7,10 +7,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.ruibot.haiku.data.HaikuRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private val FETCH_SYLLABLES_DELAY_MS = 1000L
 
 enum class LoadingState {
     Idle,
@@ -82,7 +85,6 @@ class MainViewModel @Inject constructor(
         val poemState = deriveNewPoemState(id, newInput)
 
         // we then fetch the syllables for this new input
-        // TODO debounce this to avoid too many requests
         fetchSyllablesFor(poemState)
 
         when (val state = _uiState.value) {
@@ -111,6 +113,9 @@ class MainViewModel @Inject constructor(
     private fun fetchSyllablesFor(input: PoemState) {
         fetchSyllablesJob?.cancel()
         fetchSyllablesJob = viewModelScope.launch {
+
+            delay(FETCH_SYLLABLES_DELAY_MS)
+
             val result = repository.getPoem(input.lines.map { it.text })
             when {
                 result.isSuccess -> {
