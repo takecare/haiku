@@ -1,12 +1,13 @@
 import requests
 import lxml.html
-from typing import Dict, List
+from typing import Dict, List, Optional
 from flask import Flask, abort, escape, request
 from functools import reduce
 from lxml.html import HtmlElement
 from requests import Response
 
 from monitoring import Monitor
+from store import Data, StoreProvider
 
 BASE_URL = "https://dicionario.priberam.org/"
 
@@ -20,6 +21,7 @@ SYLLABLES_XPATH = f'.//div[@class="{CONTENT_CSS_CLASS}"]//span[@class="{SYLLABLE
 app = Flask(__name__)
 app.debug = True  # TODO read from env
 monitor = Monitor(app)
+store = StoreProvider().get_store(app)
 
 
 @app.route("/", methods=["GET"])
@@ -46,32 +48,47 @@ def root():
 # that has them
 
 
-def _word_not_found(doc) -> bool:
+def _word_not_found(doc: HtmlElement) -> bool:
     not_found = doc.xpath(NOT_FOUND_XPATH)
     return True if len(not_found) > 0 else False
 
 
-def _query_word(word) -> List[str]:
-    # TODO cache words to avoid hitting priberam
+def _read_from_store(word: str) -> Optional[Data]:
+    return store.read(key=word)
+
+
+def _read_from_web(word: str) -> Optional[str]:
     html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
     doc: HtmlElement = lxml.html.fromstring(html.content)
+
     if _word_not_found(doc):
-        return []
+        return None
 
     words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
-
-    # we filter out repeated words and empty strings from priberam
     filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
 
     if len(filtered) > 1:
         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
 
+    if len(filtered) == 0:
+        return None
+
     # select first item as we may get other items
-    return (
-        []
-        if len(filtered) == 0
-        else [syllable.strip() for syllable in filtered[0].split("·")]
-    )
+    return filtered[0]
+
+
+def _query_word(word) -> List[str]:
+    stored = _read_from_store(word)
+
+    if stored is None:
+        result = _read_from_web(word)
+        if result is None:
+            return []
+        syllables = [syllable.strip() for syllable in result.split("·")]
+        stored = {"count": len(syllables), "split": syllables}
+        store.write(key=word, obj=stored)
+
+    return stored["split"]
 
 
 @app.route("/word/<word>", methods=["GET"])

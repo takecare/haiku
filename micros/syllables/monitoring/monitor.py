@@ -11,3 +11,4 @@ class Monitor:
 
 
 # TODO proper monitoring (https://docs.deta.sh/docs/micros/visor)
+# maybe consider deta base to store logs and a cron to clear them?
