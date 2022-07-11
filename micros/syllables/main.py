@@ -7,7 +7,7 @@ from lxml.html import HtmlElement
 from requests import Response
 
 from monitoring import Monitor
-from store import Data, StoreProvider
+from store import Data, Store, StoreProvider
 
 BASE_URL = "https://dicionario.priberam.org/"
 
