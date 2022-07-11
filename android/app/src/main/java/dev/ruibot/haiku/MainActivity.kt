@@ -4,6 +4,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -137,10 +142,22 @@ fun Line(
 
 @Composable
 fun SyllableCount(count: Int = 0, state: LoadingState) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val loadingColor by infiniteTransition.animateColor(
+        initialValue = Color.Unspecified,
+        targetValue = Color.Gray,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1500
+            },
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
     Text(
         text = "$count",
         color = when (state) {
-            LoadingState.Loading -> Color.Blue
+            LoadingState.Loading -> loadingColor
             LoadingState.Idle -> Color.Unspecified
             LoadingState.Error -> Color.Red
         }
