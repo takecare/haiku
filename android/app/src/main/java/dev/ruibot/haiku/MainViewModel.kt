@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private val FETCH_SYLLABLES_DELAY_MS = 1000L
+private const val FETCH_SYLLABLES_DELAY_MS = 1000L
 
 enum class LoadingState {
     Idle,
