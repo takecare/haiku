@@ -1,7 +1,6 @@
 package dev.ruibot.haiku
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColor
@@ -69,12 +68,10 @@ fun MainScreen(viewModel: MainViewModel) {
             content.poemState.lines
         }
         is UiState.Error -> {
-            Log.d("ViewModel", "> error ui state")
             val error = state as UiState.Error
             error.poemState.lines
         }
         is UiState.Loading -> {
-            Log.d("ViewModel", "> loading ui state")
             val loading = state as UiState.Error
             loading.poemState.lines
         }

@@ -1,6 +1,5 @@
 package dev.ruibot.haiku
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val FETCH_SYLLABLES_DELAY_MS = 1000L
+private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
 enum class LoadingState {
     Idle,
@@ -35,11 +34,17 @@ data class LineState(
 data class PoemState(
     val totalCount: Int = 0,
     val lines: List<LineState> = listOf(LineState(), LineState(), LineState())
-
-)
+) {
+    val loadingState: LoadingState
+        get() = lines.map { it.state }.run {
+            firstOrNull { it == LoadingState.Loading }
+                ?: firstOrNull { it == LoadingState.Error }
+                ?: LoadingState.Idle
+        }
+}
 
 sealed class UiState { // UI state for the "write" screen
-    data class Loading(val poemState: PoemState) : UiState()
+    data class Loading(val poemState: PoemState) : UiState() // FIXME not really used
     data class Content(val poemState: PoemState) : UiState()
     data class Error(val poemState: PoemState, val message: String) : UiState()
 }
@@ -75,7 +80,7 @@ class MainViewModel @Inject constructor(
 
     init {
         // TODO get poem loaded from db
-        // viewModelScope.launch { ... }
+        // viewModelScope.launch { }
     }
 
     // we emit a new state independently of the result of fetching the syllables
@@ -84,12 +89,10 @@ class MainViewModel @Inject constructor(
         // we immediately derive the new state given the new input we just got
         val poemState = deriveNewPoemState(id, newInput)
 
-        // we then fetch the syllables for this new input
-        fetchSyllablesFor(poemState)
-
         when (val state = _uiState.value) {
             is UiState.Content -> {
-                _uiState.value = UiState.Content(poemState)
+                // _uiState.value = UiState.Content(poemState)
+                _uiState.value = UiState.Loading(poemState)
             }
             is UiState.Error -> {
                 _uiState.value = UiState.Error(poemState, state.message)
@@ -98,6 +101,9 @@ class MainViewModel @Inject constructor(
                 _uiState.value = UiState.Loading(poemState)
             }
         }
+
+        // we then fetch the syllables for this new input
+        fetchSyllablesFor(poemState)
     }
 
     private fun deriveNewPoemState(id: Int, newInput: String): PoemState {
@@ -148,13 +154,12 @@ class MainViewModel @Inject constructor(
                     // TODO how to map error to specific line?
 
                     if (exception !is CancellationException) {
-                        Log.e("ViewModel", "OTHER EXCEPTION: $exception")
                         _uiState.value = UiState.Error(
                             poemState = poemState,
                             message = result.exceptionOrNull()?.message ?: "Unknown error"
                         )
                     } else {
-                        // Log.e("ViewModel", "CANCELLATION EXCEPTION: $exception")
+                        // ignored
                     }
                 }
             }
