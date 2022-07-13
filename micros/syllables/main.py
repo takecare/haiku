@@ -37,7 +37,7 @@ def root():
 # when there's more than one
 
 # TODO consider returning unrecognised words
-# returning unrecognised words will allow the frontend do signal them to the
+# returning unrecognised words will allow the frontend to signal them to the
 # user so they can understand what's happening - e.g. if user types "amigoz",
 # it is an urecognised word but it is also a typo. the backend can return it
 # so it is flagged on the frontend

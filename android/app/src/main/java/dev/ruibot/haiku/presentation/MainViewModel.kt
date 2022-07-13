@@ -16,7 +16,6 @@ private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-//    private val repository: HaikuRepository
     private val useCase: GetPoemSyllablesUseCase
 ) : ViewModel() {
 
@@ -103,15 +102,15 @@ class MainViewModel @Inject constructor(
                     val exception = result.exceptionOrNull()
                     val poemState = _uiState.value.poemState()
 
-                    // TODO how to map error to specific line?
-
                     if (exception !is CancellationException) {
                         _uiState.value = UiState.Error(
-                            poemState = poemState,
+                            poemState = poemState.copy(
+                                lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
+                            ),
                             message = result.exceptionOrNull()?.message ?: "Unknown error"
                         )
                     } else {
-                        // ignored
+                        // we ignore CancellationExceptions
                     }
                 }
             }
