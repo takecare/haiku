@@ -2,6 +2,8 @@ package dev.ruibot.haiku
 
 import dev.ruibot.haiku.data.HaikuRepository
 import dev.ruibot.haiku.data.Syllables
+import dev.ruibot.haiku.presentation.MainViewModel
+import dev.ruibot.haiku.presentation.UiState
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe

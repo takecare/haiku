@@ -1,4 +1,4 @@
-package dev.ruibot.haiku.ui.theme
+package dev.ruibot.haiku.presentation.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme

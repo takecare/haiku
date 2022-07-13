@@ -1,12 +1,12 @@
 package dev.ruibot.haiku.data
 
-import java.lang.Exception
+import dev.ruibot.haiku.domain.SyllablesRepository
 import javax.inject.Inject
+import dev.ruibot.haiku.domain.Syllables as DomainSyllables
 
 class HaikuRepository @Inject constructor(
     private val service: HaikuService
-) {
-    // TODO we probably only need getPoem()
+) : SyllablesRepository {
     // TODO database: expose flow and method to fetch data (that also writes to db, updating the flow)
 
     // https://developer.android.com/kotlin/flow
@@ -28,11 +28,15 @@ class HaikuRepository @Inject constructor(
         }
     }
 
-    suspend fun getPoem(lines: List<String>): Result<Syllables> {
+    override suspend fun getPoem(lines: List<String>): Result<DomainSyllables> {
         return try {
             val poem = Poem(lines.map { it.trim() })
-            val words = service.poem(poem)
-            return Result.success(words)
+            val syllables = service.poem(poem)
+            val domain = DomainSyllables(
+                totalCount = syllables.count,
+                syllables = syllables.split
+            )
+            return Result.success(domain)
         } catch (exception: Exception) {
             Result.failure(exception)
         }

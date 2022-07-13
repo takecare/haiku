@@ -1,4 +1,4 @@
-package dev.ruibot.haiku
+package dev.ruibot.haiku.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,7 +39,7 @@ import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.AndroidEntryPoint
-import dev.ruibot.haiku.ui.theme.HaikuTheme
+import dev.ruibot.haiku.presentation.theme.HaikuTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -72,7 +72,7 @@ fun MainScreen(viewModel: MainViewModel) {
             error.poemState.lines
         }
         is UiState.Loading -> {
-            val loading = state as UiState.Error
+            val loading = state as UiState.Loading
             loading.poemState.lines
         }
     }

@@ -1,9 +1,9 @@
-package dev.ruibot.haiku
+package dev.ruibot.haiku.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.ruibot.haiku.data.HaikuRepository
+import dev.ruibot.haiku.domain.GetPoemSyllablesUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -14,57 +14,10 @@ import javax.inject.Inject
 
 private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
-enum class LoadingState {
-    Idle,
-    Loading,
-    Error,
-}
-
-data class LineState(
-    val text: String = "",
-    val state: LoadingState = LoadingState.Idle,
-    val syllables: List<List<String>> = emptyList(),
-) {
-    val syllableCount: Int
-        get() =
-            if (syllables.isEmpty()) 0
-            else syllables.map { it.size }.reduce { acc, i -> acc + i }
-}
-
-data class PoemState(
-    val totalCount: Int = 0,
-    val lines: List<LineState> = listOf(LineState(), LineState(), LineState())
-) {
-    val loadingState: LoadingState
-        get() = lines.map { it.state }.run {
-            firstOrNull { it == LoadingState.Loading }
-                ?: firstOrNull { it == LoadingState.Error }
-                ?: LoadingState.Idle
-        }
-}
-
-sealed class UiState { // UI state for the "write" screen
-    data class Loading(val poemState: PoemState) : UiState() // FIXME not really used
-    data class Content(val poemState: PoemState) : UiState()
-    data class Error(val poemState: PoemState, val message: String) : UiState()
-}
-
-private fun UiState.poemState() =
-    when (this) {
-        is UiState.Loading -> {
-            this.poemState
-        }
-        is UiState.Content -> {
-            this.poemState
-        }
-        is UiState.Error -> {
-            this.poemState
-        }
-    }
-
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val repository: HaikuRepository
+//    private val repository: HaikuRepository
+    private val useCase: GetPoemSyllablesUseCase
 ) : ViewModel() {
 
     // https://proandroiddev.com/livedata-vs-sharedflow-and-stateflow-in-mvvm-and-mvi-architecture-57aad108816d
@@ -91,7 +44,6 @@ class MainViewModel @Inject constructor(
 
         when (val state = _uiState.value) {
             is UiState.Content -> {
-                // _uiState.value = UiState.Content(poemState)
                 _uiState.value = UiState.Loading(poemState)
             }
             is UiState.Error -> {
@@ -122,12 +74,12 @@ class MainViewModel @Inject constructor(
 
             delay(FETCH_SYLLABLES_DELAY_MS)
 
-            val result = repository.getPoem(input.lines.map { it.text })
+            val result = useCase.execute(input.lines.map { it.text })
             when {
                 result.isSuccess -> {
                     val syllables = result.getOrNull()
-                    val totalCount = syllables?.count ?: 0
-                    val split = syllables?.split ?: emptyList()
+                    val totalCount = syllables?.totalCount ?: 0
+                    val split = syllables?.syllables ?: emptyList()
                     val currentLines = _uiState.value.poemState().lines
 
                     val poemState = _uiState.value.poemState().copy(
@@ -171,3 +123,16 @@ class MainViewModel @Inject constructor(
         _uiState.value = UiState.Content(PoemState())
     }
 }
+
+private fun UiState.poemState() =
+    when (this) {
+        is UiState.Loading -> {
+            this.poemState
+        }
+        is UiState.Content -> {
+            this.poemState
+        }
+        is UiState.Error -> {
+            this.poemState
+        }
+    }

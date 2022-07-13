@@ -1,10 +1,10 @@
-package dev.ruibot.haiku
+package dev.ruibot.haiku.data
 
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import dev.ruibot.haiku.data.HaikuService
+import dev.ruibot.haiku.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -13,7 +13,7 @@ import retrofit2.create
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object DataModule {
 
     @Provides
     fun httpLoggingInterceptorLevel(): HttpLoggingInterceptor.Level =
