@@ -1,8 +1,9 @@
 package dev.ruibot.haiku
 
-import dev.ruibot.haiku.data.HaikuRepository
-import dev.ruibot.haiku.data.Syllables
+import dev.ruibot.haiku.domain.GetPoemSyllablesUseCase
+import dev.ruibot.haiku.domain.Syllables
 import dev.ruibot.haiku.presentation.MainViewModel
+import dev.ruibot.haiku.presentation.PoemState
 import dev.ruibot.haiku.presentation.UiState
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -36,17 +37,13 @@ class MainViewModelTest {
     // https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-test/MIGRATION.md
 
     @MockK
-    lateinit var repository: HaikuRepository
+    lateinit var useCase: GetPoemSyllablesUseCase
 
     private val dispatcher: TestDispatcher = UnconfinedTestDispatcher() // StandardTestDispatcher()
 
     @BeforeAll
     fun setup() {
         Dispatchers.setMain(dispatcher)
-        val arr = IntArray(2)
-        for (i in arr.indices) {
-
-        }
     }
 
     @AfterAll
@@ -56,11 +53,11 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is an empty poem`() = runTest {
-        coEvery { repository.getPoem(any()) }.returns(
+        coEvery { useCase.execute(any()) }.returns(
             Result.success(
                 Syllables(
-                    count = 1,
-                    split = listOf(
+                    totalCount = 1,
+                    syllables = listOf(
                         listOf(listOf("ola")),
                         listOf(listOf("")),
                         listOf(listOf(""))
@@ -68,7 +65,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(repository)
+        val viewModel = MainViewModel(useCase)
         val observed = viewModel.observed()
 
         observed shouldHaveSize 1
@@ -77,11 +74,11 @@ class MainViewModelTest {
 
     @Test
     fun `data is queried when input is changed`() = runTest {
-        coEvery { repository.getPoem(any()) }.returns(
+        coEvery { useCase.execute(any()) }.returns(
             Result.success(
                 Syllables(
-                    count = 1,
-                    split = listOf(
+                    totalCount = 1,
+                    syllables = listOf(
                         listOf(listOf("ola")),
                         listOf(listOf("")),
                         listOf(listOf(""))
@@ -89,21 +86,21 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(repository)
+        val viewModel = MainViewModel(useCase)
 
         viewModel.inputChanged(0, "ola")
         dispatcher.scheduler.advanceTimeBy(5000) // runCurrent() is not enough
 
-        coVerify { repository.getPoem(any()) }
+        coVerify { useCase.execute(listOf("ola", "", "")) }
     }
 
     @Test
     fun `loading is emitted when input is changed`() = runTest {
-        coEvery { repository.getPoem(any()) }.returns(
+        coEvery { useCase.execute(any()) }.returns(
             Result.success(
                 Syllables(
-                    count = 1,
-                    split = listOf(
+                    totalCount = 1,
+                    syllables = listOf(
                         listOf(listOf("ola")),
                         listOf(listOf("")),
                         listOf(listOf(""))
@@ -111,7 +108,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(repository)
+        val viewModel = MainViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "ola")
@@ -125,11 +122,11 @@ class MainViewModelTest {
 
     @Test
     fun `updated syllable count is emitted when input is changed`() = runTest {
-        coEvery { repository.getPoem(any()) }.returns(
+        coEvery { useCase.execute(any()) }.returns(
             Result.success(
                 Syllables(
-                    count = 3,
-                    split = listOf(
+                    totalCount = 3,
+                    syllables = listOf(
                         listOf(listOf("ola")),
                         listOf(listOf("")),
                         listOf(listOf(""))
@@ -137,7 +134,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(repository)
+        val viewModel = MainViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "primeiro")
@@ -148,11 +145,11 @@ class MainViewModelTest {
 
     @Test
     fun `lines' content remains unchanged when syllable count is updated`() = runTest {
-        coEvery { repository.getPoem(any()) }.returns(
+        coEvery { useCase.execute(any()) }.returns(
             Result.success(
                 Syllables(
-                    count = 1,
-                    split = listOf(
+                    totalCount = 1,
+                    syllables = listOf(
                         listOf(listOf("ola")),
                         listOf(listOf("")),
                         listOf(listOf(""))
@@ -160,7 +157,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(repository)
+        val viewModel = MainViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "ola")
