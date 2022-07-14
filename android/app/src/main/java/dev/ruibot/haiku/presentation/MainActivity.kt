@@ -1,6 +1,7 @@
 package dev.ruibot.haiku.presentation
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColor
@@ -11,7 +12,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -19,15 +19,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.Scaffold
+import androidx.compose.material.ScaffoldState
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults.textFieldColors
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +60,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
 
+    Log.d("ViewModel", "> RECOMPOSITION")
+
     // https://medium.com/tech-takeaways/how-to-safely-collect-flows-lifecycle-aware-in-jetpack-compose-a-new-approach-ed20ead25be9
     // https://proandroiddev.com/how-to-collect-flows-lifecycle-aware-in-jetpack-compose-babd53582d0b
     val state: UiState by viewModel.uiState.collectAsStateWithLifecycle(
@@ -77,8 +83,34 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 
-    Screen(title = "Haiku: Compose", onActionClicked = { viewModel.reset() }) {
-        Column {
+    val scaffoldState = rememberScaffoldState()
+
+    if (state is UiState.Error) {
+        Log.e("ViewModel", "> GOT ERROR STATE")
+        LaunchedEffect(state) {
+            val result = scaffoldState.snackbarHostState
+                .showSnackbar(
+                    message = "Snackbar",
+                    actionLabel = "Action",
+                    duration = SnackbarDuration.Indefinite
+                )
+            when (result) {
+                SnackbarResult.ActionPerformed -> {
+                    viewModel.retry()
+                }
+                SnackbarResult.Dismissed -> {
+                    //
+                }
+            }
+        }
+    }
+
+    Screen(
+        scaffoldState = scaffoldState,
+        title = "Haiku: Compose", // TODO stringResource(id=...)
+        onActionClicked = { viewModel.reset() }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Lines(
                 lines = lines,
                 onValueChange = { id, input -> viewModel.inputChanged(id, input) },
@@ -161,7 +193,49 @@ fun SyllableCount(count: Int = 0, state: LoadingState) {
     )
 }
 
+@Composable
+fun AppBar(
+    modifier: Modifier = Modifier,
+    title: String = "Haiku",
+    onActionClicked: () -> Unit = {}
+) {
+    TopAppBar(
+        modifier = modifier,
+        title = { Text(title) },
+        actions = {
+            IconButton(onClick = onActionClicked) {
+                Icon(Icons.Filled.Delete, contentDescription = "Localized action description")
+            }
+        }
+    )
+}
 
+@Composable
+fun Screen(
+    modifier: Modifier = Modifier,
+    scaffoldState: ScaffoldState = rememberScaffoldState(),
+    title: String,
+    onActionClicked: () -> Unit = {},
+    content: @Composable() () -> Unit
+) {
+    HaikuTheme {
+        Scaffold(
+            scaffoldState = scaffoldState,
+            topBar = {
+                AppBar(
+                    title = title,
+                    onActionClicked = onActionClicked,
+                )
+            },
+        ) { contentPadding ->
+            Column(modifier = modifier.padding(contentPadding)) {
+                content()
+            }
+        }
+    }
+}
+
+// region COMPOSE PREVIEWS
 @Preview(showBackground = true)
 @Composable
 fun LinesPreview() {
@@ -201,50 +275,4 @@ fun DefaultPreview() {
         )
     }
 }
-
-@Composable
-fun AppBar(
-    modifier: Modifier = Modifier,
-    title: String = "Haiku",
-    onMenuClick: () -> Unit = {},
-    onActionClicked: () -> Unit = {}
-) {
-    TopAppBar(
-        modifier = modifier,
-        title = { Text(title) },
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
-                Icon(Icons.Filled.Menu, contentDescription = null)
-            }
-        },
-        actions = {
-            IconButton(onClick = onActionClicked) {
-                Icon(Icons.Filled.Delete, contentDescription = "Localized action description")
-            }
-        }
-    )
-}
-
-@Composable
-fun Screen(
-    modifier: Modifier = Modifier,
-    title: String,
-    onMenuClick: () -> Unit = {},
-    onActionClicked: () -> Unit = {},
-    content: @Composable() () -> Unit
-) {
-    HaikuTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-            Column() {
-                AppBar(
-                    title = title,
-                    onMenuClick = onMenuClick,
-                    onActionClicked = onActionClicked,
-                )
-                Column(modifier = modifier.padding(16.dp)) {
-                    content()
-                }
-            }
-        }
-    }
-}
+// endregion

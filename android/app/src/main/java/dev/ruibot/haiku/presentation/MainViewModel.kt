@@ -1,5 +1,6 @@
 package dev.ruibot.haiku.presentation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.random.Random
 
 private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
@@ -67,6 +69,11 @@ class MainViewModel @Inject constructor(
         )
     }
 
+    fun retry() {
+        val poemState = _uiState.value.poemState()
+        fetchSyllablesFor(poemState)
+    }
+
     private fun fetchSyllablesFor(input: PoemState) {
         fetchSyllablesJob?.cancel()
         fetchSyllablesJob = viewModelScope.launch {
@@ -103,11 +110,13 @@ class MainViewModel @Inject constructor(
                     val poemState = _uiState.value.poemState()
 
                     if (exception !is CancellationException) {
+                        Log.e("ViewModel", ">> emitting ERROR state")
                         _uiState.value = UiState.Error(
                             poemState = poemState.copy(
                                 lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
                             ),
-                            message = result.exceptionOrNull()?.message ?: "Unknown error"
+//                            message = result.exceptionOrNull()?.message ?: "Unknown error"
+                            message = "${Random.Default.nextInt()}" // hack!! :(
                         )
                     } else {
                         // we ignore CancellationExceptions
