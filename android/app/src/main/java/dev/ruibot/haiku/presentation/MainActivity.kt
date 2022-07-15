@@ -1,7 +1,6 @@
 package dev.ruibot.haiku.presentation
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColor
@@ -10,10 +9,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
@@ -21,12 +23,18 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
+import androidx.compose.material.Snackbar
+import androidx.compose.material.SnackbarData
 import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults.textFieldColors
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.rememberScaffoldState
@@ -60,10 +68,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
 
-    Log.d("ViewModel", "> RECOMPOSITION")
-
     // https://medium.com/tech-takeaways/how-to-safely-collect-flows-lifecycle-aware-in-jetpack-compose-a-new-approach-ed20ead25be9
     // https://proandroiddev.com/how-to-collect-flows-lifecycle-aware-in-jetpack-compose-babd53582d0b
+
     val state: UiState by viewModel.uiState.collectAsStateWithLifecycle(
         initialValue = UiState.Content(PoemState())
     )
@@ -86,12 +93,12 @@ fun MainScreen(viewModel: MainViewModel) {
     val scaffoldState = rememberScaffoldState()
 
     if (state is UiState.Error) {
-        Log.e("ViewModel", "> GOT ERROR STATE")
+        // https://developer.android.com/jetpack/compose/side-effects
         LaunchedEffect(state) {
             val result = scaffoldState.snackbarHostState
                 .showSnackbar(
-                    message = "Snackbar",
-                    actionLabel = "Action",
+                    message = "Failed to load syllable information.", // TODO stringResource(id=...)
+                    actionLabel = "Retry",
                     duration = SnackbarDuration.Indefinite
                 )
             when (result) {
@@ -99,7 +106,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     viewModel.retry()
                 }
                 SnackbarResult.Dismissed -> {
-                    //
+                    // no op
                 }
             }
         }
@@ -118,7 +125,6 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 }
-
 
 @Composable
 fun Lines(
@@ -221,6 +227,12 @@ fun Screen(
     HaikuTheme {
         Scaffold(
             scaffoldState = scaffoldState,
+            snackbarHost = {
+                // we provide no SnackbarHost as we have our own in our custom
+                // snackbar composable. if we use the default one from the
+                // Scaffold we either can't customise it or we end up showing
+                // both ours and the default one
+            },
             topBar = {
                 AppBar(
                     title = title,
@@ -232,7 +244,56 @@ fun Screen(
                 content()
             }
         }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        ) {
+            HaikuSnackbar(
+                snackbarHostState = scaffoldState.snackbarHostState,
+                onAction = { scaffoldState.snackbarHostState.currentSnackbarData?.performAction() },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
+}
+
+@Composable
+fun HaikuSnackbar(
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    onAction: () -> Unit = {},
+) {
+    SnackbarHost(
+        hostState = snackbarHostState,
+        snackbar = { data: SnackbarData ->
+            Snackbar(
+                content = {
+                    Text(
+                        text = data.message,
+                        style = MaterialTheme.typography.body2
+                    )
+                },
+                action = {
+                    data.actionLabel?.let { actionLabel ->
+                        TextButton(onClick = onAction) {
+                            Text(
+                                text = actionLabel,
+                                color = MaterialTheme.colors.primary,
+                                style = MaterialTheme.typography.body2
+                            )
+                        }
+                    }
+                },
+                backgroundColor = MaterialTheme.colors.background,
+                contentColor = contentColorFor(MaterialTheme.colors.background)
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentHeight(Alignment.Bottom)
+    )
 }
 
 // region COMPOSE PREVIEWS

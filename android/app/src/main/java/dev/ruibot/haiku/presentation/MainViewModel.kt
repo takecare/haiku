@@ -1,6 +1,5 @@
 package dev.ruibot.haiku.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.random.Random
 
 private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
@@ -110,13 +108,14 @@ class MainViewModel @Inject constructor(
                     val poemState = _uiState.value.poemState()
 
                     if (exception !is CancellationException) {
-                        Log.e("ViewModel", ">> emitting ERROR state")
                         _uiState.value = UiState.Error(
                             poemState = poemState.copy(
                                 lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
                             ),
-//                            message = result.exceptionOrNull()?.message ?: "Unknown error"
-                            message = "${Random.Default.nextInt()}" // hack!! :(
+                            // we're appending the current time because the launched effect
+                            // won't re-trigger the error even if it is a new one, because
+                            // the UiState.Error (used as key) looks exactly the same
+                            message = (result.exceptionOrNull()?.message ?: "Unknown error") + "${System.currentTimeMillis()}"
                         )
                     } else {
                         // we ignore CancellationExceptions
