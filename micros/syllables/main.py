@@ -48,52 +48,102 @@ def root():
 # that has them
 
 
-def _word_not_found(doc: HtmlElement) -> bool:
-    not_found = doc.xpath(NOT_FOUND_XPATH)
-    return True if len(not_found) > 0 else False
+class SyllableRepository:
+    def __init__(self, syllable_store: Store, monitor: Monitor) -> None:
+        self.store = syllable_store
+        self.monitor = monitor
+
+    @staticmethod
+    def _word_not_found(doc: HtmlElement) -> bool:
+        not_found = doc.xpath(NOT_FOUND_XPATH)
+        return True if len(not_found) > 0 else False
+
+    def _get_from_web(self, word: str) -> Optional[str]:
+        html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
+        doc: HtmlElement = lxml.html.fromstring(html.content)
+
+        if self._word_not_found(doc):
+            return None
+
+        words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
+        filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
+
+        if len(filtered) > 1:
+            self.monitor.log(
+                f'Got more than one result when querying for "{word}": {filtered}'
+            )
+
+        if len(filtered) == 0:
+            return None
+
+        return filtered[0]  # select first item as we may get other items
+
+    def _read_from_store(self, word: str) -> Optional[Data]:
+        return self.store.read(key=word)
+
+    def get_syllables(self, word: str) -> Optional[List[str]]:
+        stored = self._read_from_store(word)
+
+        if stored is None:
+            result = self._get_from_web(word)
+            if result is None:
+                return None
+            syllables = [syllable.strip() for syllable in result.split("·")]
+            stored = {"count": len(syllables), "split": syllables}
+            store.write(key=word, obj=stored)
+
+        return stored["split"]
 
 
-def _read_from_store(word: str) -> Optional[Data]:
-    return store.read(key=word)
+# def _word_not_found(doc: HtmlElement) -> bool:
+#     not_found = doc.xpath(NOT_FOUND_XPATH)
+#     return True if len(not_found) > 0 else False
 
 
-def _read_from_web(word: str) -> Optional[str]:
-    html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
-    doc: HtmlElement = lxml.html.fromstring(html.content)
-
-    if _word_not_found(doc):
-        return None
-
-    words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
-    filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
-
-    if len(filtered) > 1:
-        monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
-
-    if len(filtered) == 0:
-        return None
-
-    # select first item as we may get other items
-    return filtered[0]
+# def _read_from_store(word: str) -> Optional[Data]:
+#     return store.read(key=word)
 
 
-def _query_word(word) -> List[str]:
-    stored = _read_from_store(word)
+# def _read_from_web(word: str) -> Optional[str]:
+#     html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
+#     doc: HtmlElement = lxml.html.fromstring(html.content)
 
-    if stored is None:
-        result = _read_from_web(word)
-        if result is None:
-            return []
-        syllables = [syllable.strip() for syllable in result.split("·")]
-        stored = {"count": len(syllables), "split": syllables}
-        store.write(key=word, obj=stored)
+#     if _word_not_found(doc):
+#         return None
 
-    return stored["split"]
+#     words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
+#     filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
+
+#     if len(filtered) > 1:
+#         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
+
+#     if len(filtered) == 0:
+#         return None
+
+#     # select first item as we may get other items
+#     return filtered[0]
+
+
+# def _query_word(word) -> List[str]:
+#     stored = _read_from_store(word)
+
+#     if stored is None:
+#         result = _read_from_web(word)
+#         if result is None:
+#             return []
+#         syllables = [syllable.strip() for syllable in result.split("·")]
+#         stored = {"count": len(syllables), "split": syllables}
+#         store.write(key=word, obj=stored)
+
+#     return stored["split"]
+
+repository = SyllableRepository(store, monitor)
 
 
 @app.route("/word/<word>", methods=["GET"])
 def word(word) -> Dict:
-    syllables = _query_word(word)
+    # syllables = _query_word(word)
+    syllables = result if (result := repository.get_syllables(word)) is not None else []
     return {"count": len(syllables), "split": syllables}
 
 
@@ -101,7 +151,11 @@ def word(word) -> Dict:
 def line(line) -> Dict:
     words = line.split(",")
     filtered = [word for word in words if len(word) > 0]
-    syllables = [_query_word(word) for word in filtered]
+    # syllables = [_query_word(word) for word in filtered]
+    syllables = [
+        result if (result := repository.get_syllables(word)) is not None else []
+        for word in filtered
+    ]
     return {"count": len(reduce(lambda x, y: x + y, syllables)), "split": syllables}
 
 
@@ -119,7 +173,13 @@ def poem() -> Dict:
         line_syllables = [
             syllables
             for word in words_in_line
-            if len(word) > 0 and len(syllables := _query_word(word)) > 0
+            if len(word) > 0
+            and len(
+                syllables := result
+                if (result := repository.get_syllables(word)) is not None
+                else []
+            )
+            > 0
         ]
         poem_syllables.append(line_syllables)
 
