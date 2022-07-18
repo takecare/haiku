@@ -8,6 +8,9 @@ install-dev: requirements_dev.txt
 run:
 	flask run
 
+test:
+	python3 -m pytest
+
 typecheck:
 	mypy *.py
 
