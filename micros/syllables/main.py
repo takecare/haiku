@@ -48,9 +48,8 @@ def root():
 # that has them
 
 
-class SyllableRepository:
-    def __init__(self, syllable_store: Store, monitor: Monitor) -> None:
-        self.store = syllable_store
+class SyllableService:
+    def __init__(self, monitor: Monitor) -> None:
         self.monitor = monitor
 
     @staticmethod
@@ -58,14 +57,17 @@ class SyllableRepository:
         not_found = doc.xpath(NOT_FOUND_XPATH)
         return True if len(not_found) > 0 else False
 
-    def _get_from_web(self, word: str) -> Optional[str]:
+    def fetch(self, word: str) -> Optional[str]:
         html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
         doc: HtmlElement = lxml.html.fromstring(html.content)
 
         if self._word_not_found(doc):
             return None
 
-        words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
+        # our xpath captures more than one occurrence, including empty strings
+        # e.g. for "palavra": ['pa·la·vra', '', 'pa·la·vra']
+        x = doc.xpath(SYLLABLES_XPATH)
+        words = [e.text_content() for e in x]
         filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
 
         if len(filtered) > 1:
@@ -78,6 +80,14 @@ class SyllableRepository:
 
         return filtered[0]  # select first item as we may get other items
 
+
+class SyllableRepository:
+    def __init__(
+        self, syllable_store: Store, syllable_service: SyllableService
+    ) -> None:
+        self.store = syllable_store
+        self.service = syllable_service
+
     def _read_from_store(self, word: str) -> Optional[Data]:
         return self.store.read(key=word)
 
@@ -85,7 +95,7 @@ class SyllableRepository:
         stored = self._read_from_store(word)
 
         if stored is None:
-            result = self._get_from_web(word)
+            result = self.service.fetch(word)
             if result is None:
                 return None
             syllables = [syllable.strip() for syllable in result.split("·")]
@@ -95,49 +105,8 @@ class SyllableRepository:
         return stored["split"]
 
 
-# def _word_not_found(doc: HtmlElement) -> bool:
-#     not_found = doc.xpath(NOT_FOUND_XPATH)
-#     return True if len(not_found) > 0 else False
-
-
-# def _read_from_store(word: str) -> Optional[Data]:
-#     return store.read(key=word)
-
-
-# def _read_from_web(word: str) -> Optional[str]:
-#     html: Response = requests.get(f"{BASE_URL}/{escape(word)}")
-#     doc: HtmlElement = lxml.html.fromstring(html.content)
-
-#     if _word_not_found(doc):
-#         return None
-
-#     words = [e.text_content() for e in doc.xpath(SYLLABLES_XPATH)]
-#     filtered = list(filter(lambda e: len(e) > 0, list(dict.fromkeys(words))))
-
-#     if len(filtered) > 1:
-#         monitor.log(f'Got more than one result when querying for "{word}": {filtered}')
-
-#     if len(filtered) == 0:
-#         return None
-
-#     # select first item as we may get other items
-#     return filtered[0]
-
-
-# def _query_word(word) -> List[str]:
-#     stored = _read_from_store(word)
-
-#     if stored is None:
-#         result = _read_from_web(word)
-#         if result is None:
-#             return []
-#         syllables = [syllable.strip() for syllable in result.split("·")]
-#         stored = {"count": len(syllables), "split": syllables}
-#         store.write(key=word, obj=stored)
-
-#     return stored["split"]
-
-repository = SyllableRepository(store, monitor)
+service = SyllableService(monitor)
+repository = SyllableRepository(store, service)
 
 
 @app.route("/word/<word>", methods=["GET"])
