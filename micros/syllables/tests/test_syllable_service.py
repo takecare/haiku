@@ -1,5 +1,4 @@
-from main import SyllableService
-
+from service import SyllableService
 from unittest.mock import patch
 
 

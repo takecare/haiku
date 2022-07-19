@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Union
 
+# https://mypy.readthedocs.io/en/stable/stubs.html#stub-files
 # these stubs are based on the source for deta version 1.1.0
 
 class Deta:

@@ -1,7 +1,5 @@
-from typing import Any
 from unittest.mock import patch
-from pytest_mock import mocker
-from store.store import DetaStore
+from store import DetaStore
 
 
 # https://docs.python.org/3/library/unittest.mock.html#patch-object

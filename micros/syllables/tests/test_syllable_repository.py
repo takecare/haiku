@@ -1,6 +1,5 @@
 from unittest.mock import ANY, patch
-
-from repository.repository import SyllableRepository
+from repository import SyllableRepository
 
 
 @patch("store.Store")

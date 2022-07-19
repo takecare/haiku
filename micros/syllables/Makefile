@@ -5,6 +5,9 @@ install-dev: requirements_dev.txt
 	python3 -m pip install -r requirements_dev.txt
 	mypy --install-types
 
+lock:
+	python3 -m pip freeze > requirements_lock.txt
+
 run:
 	flask run
 
@@ -12,6 +15,7 @@ test:
 	python3 -m pytest
 
 typecheck:
+	export MYPYPATH=./stubs
 	mypy *.py
 
 format:
