@@ -1,3 +1,2 @@
-from typing import Any, Dict
-from .store import Store, Data
+from .store import Store
 from .store_provider import StoreProvider

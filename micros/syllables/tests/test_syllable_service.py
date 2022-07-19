@@ -1,5 +1,4 @@
 from main import SyllableService
-import lxml.html
 
 from unittest.mock import patch
 
