@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, Optional
-from deta import (
-    Deta,
-)  # TODO https://mypy.readthedocs.io/en/stable/stubs.html#stub-files
+
+# TODO https://mypy.readthedocs.io/en/stable/stubs.html#stub-files
+from deta import Deta
 
 Data = Dict[str, Any]
 
