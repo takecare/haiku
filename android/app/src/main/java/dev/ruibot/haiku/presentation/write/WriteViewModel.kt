@@ -15,8 +15,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,7 +41,11 @@ class WriteViewModel @Inject constructor(
     // https://medium.com/androiddevelopers/viewmodel-one-off-event-antipatterns-16a1da869b95
     // https://proandroiddev.com/sending-view-model-events-to-the-ui-eef76bdd632c
     private val _events = Channel<Event>(Channel.BUFFERED)
-    val events: Flow<Event> = _events.receiveAsFlow()
+    val events: Flow<Event> = _events
+        .receiveAsFlow()
+        // this is dangerous (allows handling the same value multiple times) but
+        // sharing enables both compose and the fragment to observe/collect this
+        .shareIn(viewModelScope, SharingStarted.Lazily, 0)
 
     private var fetchSyllablesJob: Job? = null
 

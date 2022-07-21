@@ -99,7 +99,7 @@ fun Screen(
     content: @Composable() () -> Unit
 ) {
     var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Write", "Read", "Settings")
+    val items = listOf("Write", "Read", "Settings") // TODO proper destinations
 
     HaikuTheme {
         Scaffold(
@@ -110,9 +110,11 @@ fun Screen(
                 // Scaffold we either can't customise it or we end up showing
                 // both ours and the default one
             },
-            // FIXME we can't have the appbar be a part of this scaffold.
+            // FIXME we can't have the appbar be a part of this scaffold!
             // if the appbar is here then we cannot change it from any of the
-            // fragments we display
+            // fragments we display - unless we share a viewmodel, ugh
+            // unfortunately this means that each screen will have to have to
+            // deal with its own snackbar, ugh!!
             topBar = {
                 AppBar(
                     title = title,

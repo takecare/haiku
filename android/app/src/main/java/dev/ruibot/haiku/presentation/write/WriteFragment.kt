@@ -88,6 +88,12 @@ class WriteFragment : Fragment() {
                 WriteScreen(viewModel = viewModel)
             }
         }
+
+        viewModel.events
+            .flowWithLifecycle(lifecycle)
+            .onEach { Log.d("EVENT", "FRAGMENT: $it") }
+            .launchIn(lifecycleScope)
+
         return view
     }
 
@@ -119,7 +125,7 @@ fun WriteScreen(
 
     viewModel.events
         .flowWithLifecycle(lifecycle = LocalLifecycleOwner.current.lifecycle)
-        .onEach { Log.d("EVENT", "$it") }
+        .onEach { Log.d("EVENT", "COMPOSE: $it") }
         .launchIn(LocalLifecycleOwner.current.lifecycleScope)
 
     val lines = when (state) {
@@ -166,31 +172,10 @@ fun WriteScreen(
             lines = lines,
             onValueChange = { id, input -> viewModel.inputChanged(id, input) },
         )
-        Button(onClick = {
-            // TODO consider pushing this to the viewmodel:
-            // viewmodel will push new event and we capture it at the fragment level, not at the compose level
-            viewModel.testeClicked()
-        }) {
+        Button(onClick = { viewModel.testeClicked() }) {
             Text(text = "TESTE")
         }
     }
-
-    //    Screen(
-    //        scaffoldState = scaffoldState,
-    //        title = "Haiku: Compose", // TODO stringResource(id=...)
-    //        onActionClicked = { viewModel.reset() }
-    //    ) {
-    //        AndroidViewBinding(FragmentNavBinding::inflate) {
-    //            //
-    //        }
-    //
-    //        Box(modifier = Modifier.padding(16.dp)) {
-    //            Lines(
-    //                lines = lines,
-    //                onValueChange = { id, input -> viewModel.inputChanged(id, input) },
-    //            )
-    //        }
-    //    }
 }
 
 @Composable
