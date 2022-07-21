@@ -36,11 +36,13 @@ import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.platform.compositionContext
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,8 +52,10 @@ import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
+import dev.ruibot.haiku.R
 import dev.ruibot.haiku.databinding.FragmentWriteBinding
 import dev.ruibot.haiku.presentation.LineState
 import dev.ruibot.haiku.presentation.LoadingState
@@ -78,15 +82,15 @@ class WriteFragment : Fragment() {
 
         val navController = Navigation.findNavController(container as View)
         // val navigator = navController.navigatorProvider.navigators["fragment"]
-
         // navController.navigate(R.id.settings_screen)
 
         binding.composeView.apply {
             // Dispose of the Composition when the view's LifecycleOwner is destroyed
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                WriteScreen(viewModel = viewModel)
+                WriteScreen(viewModel = viewModel, navController = navController)
             }
+            this.compositionContext
         }
 
         viewModel.events
@@ -114,6 +118,7 @@ class WriteFragment : Fragment() {
 @Composable
 fun WriteScreen(
     viewModel: WriteViewModel,
+    navController: NavController
 ) {
 
     // https://medium.com/tech-takeaways/how-to-safely-collect-flows-lifecycle-aware-in-jetpack-compose-a-new-approach-ed20ead25be9
@@ -165,14 +170,17 @@ fun WriteScreen(
         }
     }
 
-    // val navController = rememberNavController(navigators)
+    val _navController = remember { navController }
 
     Box(modifier = Modifier.padding(16.dp)) {
         Lines(
             lines = lines,
             onValueChange = { id, input -> viewModel.inputChanged(id, input) },
         )
-        Button(onClick = { viewModel.testeClicked() }) {
+        Button(onClick = {
+            viewModel.testeClicked()
+            _navController.navigate(R.id.settings_screen)
+        }) {
             Text(text = "TESTE")
         }
     }
