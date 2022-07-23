@@ -2,9 +2,9 @@ package dev.ruibot.haiku
 
 import dev.ruibot.haiku.domain.GetPoemSyllablesUseCase
 import dev.ruibot.haiku.domain.Syllables
-import dev.ruibot.haiku.presentation.MainViewModel
 import dev.ruibot.haiku.presentation.PoemState
 import dev.ruibot.haiku.presentation.UiState
+import dev.ruibot.haiku.presentation.write.WriteViewModel
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 @OptIn(ExperimentalCoroutinesApi::class)
 @ExtendWith(MockKExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class MainViewModelTest {
+class WriteViewModelTest {
     // https://phauer.com/2018/best-practices-unit-testing-kotlin/
     // https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-test/MIGRATION.md
 
@@ -65,7 +65,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(useCase)
+        val viewModel = WriteViewModel(useCase)
         val observed = viewModel.observed()
 
         observed shouldHaveSize 1
@@ -86,7 +86,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(useCase)
+        val viewModel = WriteViewModel(useCase)
 
         viewModel.inputChanged(0, "ola")
         dispatcher.scheduler.advanceTimeBy(5000) // runCurrent() is not enough
@@ -108,7 +108,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(useCase)
+        val viewModel = WriteViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "ola")
@@ -134,7 +134,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(useCase)
+        val viewModel = WriteViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "primeiro")
@@ -157,7 +157,7 @@ class MainViewModelTest {
                 )
             )
         )
-        val viewModel = MainViewModel(useCase)
+        val viewModel = WriteViewModel(useCase)
         val observed = viewModel.observed()
 
         viewModel.inputChanged(0, "ola")
@@ -168,7 +168,7 @@ class MainViewModelTest {
         (observed[2] as UiState.Content).poemState.lines.size shouldBe 3
     }
 
-    private fun MainViewModel.observed(): List<UiState> =
+    private fun WriteViewModel.observed(): List<UiState> =
         mutableListOf<UiState>().apply {
             uiState
                 .onEach { add(it) }
