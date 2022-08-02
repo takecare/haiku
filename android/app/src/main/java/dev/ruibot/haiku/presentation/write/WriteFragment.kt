@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -32,7 +33,6 @@ import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,10 +57,6 @@ import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
 import dev.ruibot.haiku.R
 import dev.ruibot.haiku.databinding.FragmentWriteBinding
-import dev.ruibot.haiku.presentation.LineState
-import dev.ruibot.haiku.presentation.LoadingState
-import dev.ruibot.haiku.presentation.PoemState
-import dev.ruibot.haiku.presentation.UiState
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -68,7 +64,7 @@ import kotlinx.coroutines.flow.onEach
 class WriteFragment : Fragment() {
 
     private var _binding: FragmentWriteBinding? = null
-    private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView.
+    private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView
 
     private val viewModel by viewModels<WriteViewModel>()
 
@@ -80,6 +76,7 @@ class WriteFragment : Fragment() {
         _binding = FragmentWriteBinding.inflate(inflater, container, false)
         val view = binding.root
 
+        // this is the best way i could find to get the nav controller in our situation
         val navController = Navigation.findNavController(container as View)
         // val navigator = navController.navigatorProvider.navigators["fragment"]
         // navController.navigate(R.id.settings_screen)
@@ -105,13 +102,6 @@ class WriteFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
-    //    override fun onActivityCreated(savedInstanceState: Bundle?) {
-    //        super.onActivityCreated(savedInstanceState)
-    //        viewModel = ViewModelProvider(this).get(WriteViewModel::class.java)
-    //        // TODO: Use the ViewModel
-    //    }
-
 }
 
 @OptIn(ExperimentalLifecycleComposeApi::class) // collectAsStateWithLifecycle
@@ -124,8 +114,8 @@ fun WriteScreen(
     // https://medium.com/tech-takeaways/how-to-safely-collect-flows-lifecycle-aware-in-jetpack-compose-a-new-approach-ed20ead25be9
     // https://proandroiddev.com/how-to-collect-flows-lifecycle-aware-in-jetpack-compose-babd53582d0b
 
-    val state: UiState by viewModel.uiState.collectAsStateWithLifecycle(
-        initialValue = UiState.Content(PoemState())
+    val state: WriteUiState by viewModel.uiState.collectAsStateWithLifecycle(
+        initialValue = WriteUiState.Content(PoemState())
     )
 
     viewModel.events
@@ -134,26 +124,27 @@ fun WriteScreen(
         .launchIn(LocalLifecycleOwner.current.lifecycleScope)
 
     val lines = when (state) {
-        is UiState.Content -> {
-            val content = state as UiState.Content
+        is WriteUiState.Content -> {
+            val content = state as WriteUiState.Content
             content.poemState.lines
         }
-        is UiState.Error -> {
-            val error = state as UiState.Error
+        is WriteUiState.Error -> {
+            val error = state as WriteUiState.Error
             error.poemState.lines
         }
-        is UiState.Loading -> {
-            val loading = state as UiState.Loading
+        is WriteUiState.Loading -> {
+            val loading = state as WriteUiState.Loading
             loading.poemState.lines
         }
     }
 
-    val scaffoldState = rememberScaffoldState()
+    // val scaffoldState = rememberScaffoldState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    if (state is UiState.Error) {
+    if (state is WriteUiState.Error) {
         // https://developer.android.com/jetpack/compose/side-effects
         LaunchedEffect(state) {
-            val result = scaffoldState.snackbarHostState
+            val result = snackbarHostState
                 .showSnackbar(
                     message = "Failed to load syllable information.", // TODO stringResource(id=...)
                     actionLabel = "Retry",
@@ -182,6 +173,18 @@ fun WriteScreen(
             _navController.navigate(R.id.settings_screen)
         }) {
             Text(text = "TESTE")
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        ) {
+            dev.ruibot.haiku.presentation.HaikuSnackbar(
+                snackbarHostState = snackbarHostState,
+                onAction = { snackbarHostState.currentSnackbarData?.performAction() },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

@@ -2,8 +2,8 @@ package dev.ruibot.haiku
 
 import dev.ruibot.haiku.domain.GetPoemSyllablesUseCase
 import dev.ruibot.haiku.domain.Syllables
-import dev.ruibot.haiku.presentation.PoemState
-import dev.ruibot.haiku.presentation.UiState
+import dev.ruibot.haiku.presentation.write.PoemState
+import dev.ruibot.haiku.presentation.write.WriteUiState
 import dev.ruibot.haiku.presentation.write.WriteViewModel
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -69,7 +69,7 @@ class WriteViewModelTest {
         val observed = viewModel.observed()
 
         observed shouldHaveSize 1
-        observed.first() shouldBe UiState.Content(PoemState())
+        observed.first() shouldBe WriteUiState.Content(PoemState())
     }
 
     @Test
@@ -115,9 +115,9 @@ class WriteViewModelTest {
         advanceUntilIdle() // we have to wait for the delay even though it's "immediate"
 
         observed shouldHaveSize 3
-        observed[0] should { it is UiState.Content }
-        observed[1] should { it is UiState.Loading }
-        observed[2] should { it is UiState.Content }
+        observed[0] should { it is WriteUiState.Content }
+        observed[1] should { it is WriteUiState.Loading }
+        observed[2] should { it is WriteUiState.Content }
     }
 
     @Test
@@ -140,7 +140,7 @@ class WriteViewModelTest {
         viewModel.inputChanged(0, "primeiro")
         advanceUntilIdle() // we have to wait for the delay even though it's "immediate"
 
-        (observed.last() as UiState.Content).poemState.totalCount shouldBe 3
+        (observed.last() as WriteUiState.Content).poemState.totalCount shouldBe 3
     }
 
     @Test
@@ -163,13 +163,13 @@ class WriteViewModelTest {
         viewModel.inputChanged(0, "ola")
         advanceUntilIdle() // we have to wait for the delay even though it's "immediate"
 
-        (observed[0] as UiState.Content).poemState.lines.size shouldBe 3
-        (observed[1] as UiState.Loading).poemState.lines.size shouldBe 3
-        (observed[2] as UiState.Content).poemState.lines.size shouldBe 3
+        (observed[0] as WriteUiState.Content).poemState.lines.size shouldBe 3
+        (observed[1] as WriteUiState.Loading).poemState.lines.size shouldBe 3
+        (observed[2] as WriteUiState.Content).poemState.lines.size shouldBe 3
     }
 
-    private fun WriteViewModel.observed(): List<UiState> =
-        mutableListOf<UiState>().apply {
+    private fun WriteViewModel.observed(): List<WriteUiState> =
+        mutableListOf<WriteUiState>().apply {
             uiState
                 .onEach { add(it) }
                 .launchIn(CoroutineScope(dispatcher))

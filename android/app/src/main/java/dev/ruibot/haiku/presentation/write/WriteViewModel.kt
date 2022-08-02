@@ -4,10 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.ruibot.haiku.domain.GetPoemSyllablesUseCase
-import dev.ruibot.haiku.presentation.LineState
-import dev.ruibot.haiku.presentation.LoadingState
-import dev.ruibot.haiku.presentation.PoemState
-import dev.ruibot.haiku.presentation.UiState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,8 +20,8 @@ import javax.inject.Inject
 
 private const val FETCH_SYLLABLES_DELAY_MS = 1200L
 
-sealed class Event {
-    object NavigateToSettings : Event()
+sealed class WriteEvent {
+    object NavigateToSettings : WriteEvent()
 }
 
 @HiltViewModel
@@ -35,13 +31,13 @@ class WriteViewModel @Inject constructor(
 
     // https://proandroiddev.com/livedata-vs-sharedflow-and-stateflow-in-mvvm-and-mvi-architecture-57aad108816d
     // https://medium.com/androiddevelopers/a-safer-way-to-collect-flows-from-android-uis-23080b1f8bda
-    private val _uiState = MutableStateFlow<UiState>(UiState.Content(PoemState()))
-    val uiState: StateFlow<UiState> = _uiState
+    private val _uiState = MutableStateFlow<WriteUiState>(WriteUiState.Content(PoemState()))
+    val uiState: StateFlow<WriteUiState> = _uiState
 
     // https://medium.com/androiddevelopers/viewmodel-one-off-event-antipatterns-16a1da869b95
     // https://proandroiddev.com/sending-view-model-events-to-the-ui-eef76bdd632c
-    private val _events = Channel<Event>(Channel.BUFFERED)
-    val events: Flow<Event> = _events
+    private val _events = Channel<WriteEvent>(Channel.BUFFERED)
+    val events: Flow<WriteEvent> = _events
         .receiveAsFlow()
         // this is dangerous (allows handling the same value multiple times) but
         // sharing enables both compose and the fragment to observe/collect this
@@ -61,14 +57,14 @@ class WriteViewModel @Inject constructor(
         val poemState = deriveNewPoemState(id, newInput)
 
         when (val state = _uiState.value) {
-            is UiState.Content -> {
-                _uiState.value = UiState.Loading(poemState)
+            is WriteUiState.Content -> {
+                _uiState.value = WriteUiState.Loading(poemState)
             }
-            is UiState.Error -> {
-                _uiState.value = UiState.Error(poemState, state.message)
+            is WriteUiState.Error -> {
+                _uiState.value = WriteUiState.Error(poemState, state.message)
             }
-            is UiState.Loading -> {
-                _uiState.value = UiState.Loading(poemState)
+            is WriteUiState.Loading -> {
+                _uiState.value = WriteUiState.Loading(poemState)
             }
         }
 
@@ -117,9 +113,9 @@ class WriteViewModel @Inject constructor(
                     )
 
                     _uiState.value = when (_uiState.value) {
-                        is UiState.Loading -> UiState.Content(poemState)
-                        is UiState.Content -> UiState.Content(poemState)
-                        is UiState.Error -> UiState.Content(poemState)
+                        is WriteUiState.Loading -> WriteUiState.Content(poemState)
+                        is WriteUiState.Content -> WriteUiState.Content(poemState)
+                        is WriteUiState.Error -> WriteUiState.Content(poemState)
                     }
                 }
                 result.isFailure -> {
@@ -127,7 +123,7 @@ class WriteViewModel @Inject constructor(
                     val poemState = _uiState.value.poemState()
 
                     if (exception !is CancellationException) {
-                        _uiState.value = UiState.Error(
+                        _uiState.value = WriteUiState.Error(
                             poemState = poemState.copy(
                                 lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
                             ),
@@ -146,25 +142,25 @@ class WriteViewModel @Inject constructor(
 
     // debug only
     fun reset() {
-        _uiState.value = UiState.Content(PoemState())
+        _uiState.value = WriteUiState.Content(PoemState())
     }
 
     fun testeClicked() {
         viewModelScope.launch(Dispatchers.Main.immediate) {
-            _events.send(Event.NavigateToSettings)
+            _events.send(WriteEvent.NavigateToSettings)
         }
     }
 }
 
-private fun UiState.poemState() =
+private fun WriteUiState.poemState() =
     when (this) {
-        is UiState.Loading -> {
+        is WriteUiState.Loading -> {
             this.poemState
         }
-        is UiState.Content -> {
+        is WriteUiState.Content -> {
             this.poemState
         }
-        is UiState.Error -> {
+        is WriteUiState.Error -> {
             this.poemState
         }
     }

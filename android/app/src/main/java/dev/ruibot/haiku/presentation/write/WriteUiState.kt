@@ -1,12 +1,12 @@
-package dev.ruibot.haiku.presentation
+package dev.ruibot.haiku.presentation.write
 
-sealed class UiState { // UI state for the "write" screen
-    data class Loading(val poemState: PoemState) : UiState() // FIXME not really used
-    data class Content(val poemState: PoemState) : UiState()
+sealed class WriteUiState { // UI state for the "write" screen
+    data class Loading(val poemState: PoemState) : WriteUiState() // FIXME not really used
+    data class Content(val poemState: PoemState) : WriteUiState()
     data class Error(
         val poemState: PoemState,
         val message: String
-    ) : UiState()
+    ) : WriteUiState()
 }
 
 enum class LoadingState {

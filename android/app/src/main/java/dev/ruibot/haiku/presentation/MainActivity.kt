@@ -3,6 +3,7 @@ package dev.ruibot.haiku.presentation
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,40 +36,90 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
 import dev.ruibot.haiku.databinding.FragmentNavBinding
 import dev.ruibot.haiku.presentation.theme.HaikuTheme
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    private val viewModel by viewModels<MainViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        viewModel.events
+            .flowWithLifecycle(lifecycle)
+            .onEach { event ->
+                when (event) {
+                    is MainEvent.NavigateToWrite -> {
+                        // FIXME how do we do this? no nav controller here!!
+                    }
+                    is MainEvent.NavigateToRead -> {}
+                    is MainEvent.NavigateToSettings -> {}
+                }
+            }
+            .launchIn(lifecycleScope)
+
         setContent {
-            MainScreen(viewModel = viewModel())
+            // MainScreen(viewModel())
+            MainScreen(viewModel)
         }
     }
 }
 
+@OptIn(ExperimentalLifecycleComposeApi::class) // collectAsStateWithLifecycle
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    // navController: NavController
+) {
 
     val scaffoldState = rememberScaffoldState()
+
+    val state: MainUiState by viewModel.uiState.collectAsStateWithLifecycle(
+        initialValue = MainUiState.Loading()
+    )
+
+    val navItems: List<NavItem> = when (state) {
+        is MainUiState.Loading -> {
+            (state as MainUiState.Loading).navItems
+        }
+        is MainUiState.Content -> {
+            (state as MainUiState.Content).navItems
+        }
+        is MainUiState.Error -> {
+            (state as MainUiState.Error).navItems
+        }
+    }
 
     Screen(
         scaffoldState = scaffoldState,
         title = "Haiku: Compose", // TODO stringResource(id=...)
+        onNavItemClicked = { navItemIndex ->
+            viewModel.navItemClicked() // TODO @RUI
+        },
         onActionClicked = {
             Log.d("MAIN", "action clicked")
-        }
+        },
+        navItems = navItems
     ) {
         AndroidViewBinding(FragmentNavBinding::inflate) {
-            // this is our navhost
+            // FIXME we can get the nav controller here but we actually need it one level above
+            // (i.e. outside "MainScreen"). here we can't actually do anything with it!
+            // the only way is to drop Events and merge them with UiState
+            val navController = Navigation.findNavController(navHostFragment)
         }
     }
 }
@@ -95,11 +146,13 @@ fun Screen(
     modifier: Modifier = Modifier,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
     title: String,
+    navItems: List<NavItem>, // TODO maybe don't use this model here
     onActionClicked: () -> Unit = {},
+    onNavItemClicked: (item: Int) -> Unit = {},
     content: @Composable() () -> Unit
 ) {
+
     var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Write", "Read", "Settings") // TODO proper destinations
 
     HaikuTheme {
         Scaffold(
@@ -123,12 +176,15 @@ fun Screen(
             },
             bottomBar = {
                 BottomNavigation {
-                    items.forEachIndexed { index, item ->
+                    navItems.forEachIndexed { index, item ->
                         BottomNavigationItem(
                             icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
-                            label = { Text(item) },
+                            label = { Text(stringResource(item.title)) },
                             selected = selectedItem == index,
-                            onClick = { selectedItem = index }
+                            onClick = {
+                                selectedItem = index
+                                // TODO @RUI
+                            }
                         )
                     }
                 }
