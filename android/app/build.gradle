@@ -9,12 +9,12 @@ plugins {
 // https://developer.android.com/studio/build/gradle-tips
 
 android {
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "dev.ruibot.haiku"
         minSdk 24
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
@@ -64,6 +64,7 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    namespace 'dev.ruibot.haiku'
 }
 
 dependencies {
@@ -85,11 +86,10 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version"
 
+    implementation "androidx.recyclerview:recyclerview:1.3.0"
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
     implementation "androidx.navigation:navigation-compose:$nav_version"
-
-    implementation "androidx.recyclerview:recyclerview:1.2.1"
 
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.2'
     implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.2'
