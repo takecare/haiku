@@ -31,6 +31,7 @@ it runs.
 We use Python v3.9.13 (this is because Deta - our infrastructure - supports only
 versions 3.7, 3.8 and 3.9).
 
+- Go to `micros/syllables`
 - Run `python3 -m venv venv` to create the virtual environment
 - Activate it: `source venv/bin/activate`
 - Make sure you're picking up the virtual environment: `which python3`,
