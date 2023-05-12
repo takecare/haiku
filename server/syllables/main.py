@@ -58,7 +58,8 @@ def line(line) -> Dict:
 @app.route("/poem", methods=["POST"])
 def poem() -> Dict:
     """
-    Expected request body format: { body: ["primeira linha", "segunda linha", ...] }
+    Expected request body format:
+     { body: ["primeira linha", "segunda linha", ...] }
     """
     lines = request.json["body"]  # type: ignore
     poem_syllables: list[list[list[str]]] = []

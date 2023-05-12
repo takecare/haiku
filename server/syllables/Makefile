@@ -3,7 +3,7 @@ install: requirements.txt
 
 install-dev: requirements_dev.txt
 	python3 -m pip install -r requirements_dev.txt
-	mypy --install-types
+	mypy ./ --install-types
 
 lock:
 	python3 -m pip freeze > requirements_lock.txt
@@ -23,10 +23,10 @@ format:
 
 deploy:
 	deta update -e .env.prod
-	deta deploy
+	space push
 
-logs: # enable, disable, open
-	deta visor $(filter-out $@,$(MAKECMDGOALS))
+logs:
+	space open
 
 # catch-all to avoid make printing out errors for commands with parameters
 # e.g. "make logs enable"

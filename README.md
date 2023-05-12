@@ -31,7 +31,7 @@ it runs.
 We use Python v3.9.13 (this is because Deta - our infrastructure - supports only
 versions 3.7, 3.8 and 3.9).
 
-- Go to `micros/syllables`
+- Go to `server/syllables`
 - Run `python3 -m venv venv` to create the virtual environment
 - Activate it: `source venv/bin/activate`
 - Make sure you're picking up the virtual environment: `which python3`,
@@ -68,19 +68,18 @@ This project uses black to format code. Run it with `make format`.
 
 ### Deployments
 
-We deploy on Deta. Deta will look for dependencies declared in
-`requirements.txt` so make sure you have this file (it's already in the repo).
+We deploy on Deta Space, now that Deta Cloud is deprecated. Deta will look for
+dependencies declared in `requirements.txt` so make sure you have this file
+(it's already in the repo).
 
 To deploy a micro run `make deploy` in the micro's directory. This will also
 update enviroment variables on Deta - these are stored in `.env.prod`.
 
 ### Logging
 
-We rely on Deta's logging (aka "visor").
-
-- Run `make logs enable` to enable visor (`make logs disable` to disable them).
-
-- Run `make logs open` to open the logs in your default web browser.
+Deta no longer supports VISOR, after migrating from "Deta Cloud" to
+"Deta Spaces". This means there is only one way to check the logs and that is
+in the web browser, as such `make logs` will open the Builder UI in a browser.
 
 ## Android
 
