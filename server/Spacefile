@@ -1,9 +1,11 @@
 # Spacefile Docs: https://go.deta.dev/docs/spacefile/v0
 v: 0
 micros:
-  - name: syllables
-    src: ./
+  - name: api
+    src: api
     engine: python3.9
     primary: true
+    run: gunicorn main:app
+    dev: ./run.sh .env.local
     public_routes:
       - "/*"

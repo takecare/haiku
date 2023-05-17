@@ -1,14 +1,22 @@
+setup:
+	python3 -m venv venv
+	. venv/bin/activate
+	python3 -m pip install --upgrade pip
+	make install-dev
+	make lock
+
 install: requirements.txt
 	python3 -m pip install -r requirements.txt
 
 install-dev: requirements_dev.txt
 	python3 -m pip install -r requirements_dev.txt
-	mypy ./ --install-types
+	mypy ./ --install-types --non-interactive || true
 
 lock:
 	python3 -m pip freeze > requirements_lock.txt
 
 run:
+	. .env.local
 	flask run
 
 test:
@@ -16,7 +24,7 @@ test:
 
 typecheck:
 	export MYPYPATH=./stubs
-	mypy *.py
+	mypy ./
 
 format:
 	black ./

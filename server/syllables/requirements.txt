@@ -1,5 +1,0 @@
-requests
-lxml
-decouple
-flask
-deta
