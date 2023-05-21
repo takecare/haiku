@@ -7,13 +7,16 @@ from repository import SyllableRepository
 from service.service import SyllableService
 from store import StoreProvider
 
+
 def create_app():
     app = Flask(__name__)
 
+    # this is not needed as flask picks up on the env var FLASK_DEBUG
     with app.app_context():
         app.debug = True  # TODO read from env
 
     return app
+
 
 app = create_app()
 monitor = Monitor(app)
@@ -21,9 +24,10 @@ store = StoreProvider().get_store(app)
 service = SyllableService(monitor)
 repository = SyllableRepository(store, service)
 
+
 @app.route("/", methods=["GET"])
 def root():
-    return f"{app.debug}"
+    return {"debug": app.debug}
 
 
 # TODO handle suffixes and prefixes?

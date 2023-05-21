@@ -1,0 +1,7 @@
+__pycache__
+.vscode
+.mypy_cache
+.python-version
+.env.local
+
+requirements_dev.txt

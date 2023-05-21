@@ -6,6 +6,7 @@ micros:
     engine: python3.9
     primary: true
     run: gunicorn main:app
-    dev: ./run.sh .env.local
+    # the path passed to run.sh is relative to src
+    dev: ./run.sh ./.env.local
     public_routes:
       - "/*"
