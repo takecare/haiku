@@ -27,7 +27,7 @@ run:
 
 dev:
 	$(call load_env_file, .env)
-	flask --app main run
+	flask run
 
 test:
 	python3 -m pytest

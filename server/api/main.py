@@ -8,11 +8,8 @@ from repository import SyllableRepository
 from service.service import SyllableService
 from store import StoreProvider
 
-print(os.environ['FLASK_ENV'])
-
 def create_app():
     app = Flask(__name__)
-    # app.config.from_envvar('APP_CONFIG')
     return app
 
 
