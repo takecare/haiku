@@ -6,4 +6,6 @@ activate () {
 }
 
 activate $@
-flask run # flask --app main run
+echo "> flask env: $FLASK_ENV"
+flask --app main run
+# make dev

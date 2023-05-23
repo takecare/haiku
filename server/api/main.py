@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 from flask import Flask, abort, current_app, g, request
 from functools import reduce
@@ -7,14 +8,11 @@ from repository import SyllableRepository
 from service.service import SyllableService
 from store import StoreProvider
 
+print(os.environ['FLASK_ENV'])
 
 def create_app():
     app = Flask(__name__)
-
-    # this is not needed as flask picks up on the env var FLASK_DEBUG
-    with app.app_context():
-        app.debug = True  # TODO read from env
-
+    # app.config.from_envvar('APP_CONFIG')
     return app
 
 

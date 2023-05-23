@@ -1,3 +1,9 @@
+define load_env_file
+    $(eval ENV_FILE := $(1))
+    $(eval include $(1))
+    $(eval export)
+endef
+
 setup:
 	python3 -m venv .venv
 	. ./.venv/bin/activate
@@ -16,8 +22,12 @@ lock:
 	python3 -m pip freeze > requirements_lock.txt
 
 run:
-	. ./.env.local
-	flask run
+	$(call load_env_file, .env.prod)
+	gunicorn main:app
+
+dev:
+	$(call load_env_file, .env)
+	flask --app main run
 
 test:
 	python3 -m pytest

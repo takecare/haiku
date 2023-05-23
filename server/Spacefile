@@ -7,6 +7,7 @@ micros:
     primary: true
     run: gunicorn main:app
     # the path passed to run.sh is relative to src
-    dev: ./run.sh ./.env.local
+    # dev: ./run.sh ./.env
+    dev: make dev
     public_routes:
       - "/*"
