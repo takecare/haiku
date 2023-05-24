@@ -1,0 +1,2 @@
+# making sure .env.prod is not pushed to git
+.env.prod

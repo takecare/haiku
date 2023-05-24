@@ -1,3 +1,5 @@
+MAKEFLAGS += --silent
+
 define load_env_file
     $(eval ENV_FILE := $(1))
     $(eval include $(1))
@@ -40,7 +42,9 @@ format:
 	black ./
 
 deploy:
-	space push
+# make sure .env.prod exists before deploying
+	@test -f .env.prod
+	@space push
 
 logs:
 	space open
