@@ -14,26 +14,31 @@ not yet ready to support this sort of cases, so accents are required.
 The enterity of the infrastructure is on Deta, requiring little to no
 intervention on our end.
 
-At the moment we have only one micro/cloud function, named `syllables`. It
+At the moment we have only one micro/cloud function, named `api`. It
 currently requires no authentication whatsoever (although we may be adding
 API keys in the future). It is served over HTTPS, managed by Deta.
 
 It's our whole API, providing endpoints to determine the number of syllables in
 a word, line or set of lines.
 
-We don't rely on any WSGI server as Deta has its own, which wraps every micro
-it runs.
+We rely on [gunicorn](https://gunicorn.org/) as our WSGI server in production,
+and on [Werkzeug](https://pypi.org/project/Werkzeug/) for local development.
 
 ### Local development
 
-#### Venv
+As we only have one micro at the moment, these section focus on that single
+micro/function. If we deploy more micros in the future they'll likely follow
+the same exact setup as our `api` micro.
 
-We use Python v3.9.13 (this is because Deta - our infrastructure - supports only
-versions 3.7, 3.8 and 3.9).
+#### Virtual Environment
 
-- Go to `server/syllables`
-- Run `python3 -m venv venv` to create the virtual environment
-- Activate it: `source venv/bin/activate`
+We use Python v3.9.13 (this is because Deta Space [only supports versions 3.8
+and 3.9](https://deta.space/docs/en/quickstart-guides/python)). We use `pyenv`
+to manage Python versions locally (but you don't have to).
+
+- Go to `server/api`
+- Run `python3 -m venv .venv` to create the virtual environment
+- Activate it: `source .venv/bin/activate`
 - Make sure you're picking up the virtual environment: `which python3`,
   `which pip` - these should print out results from your local virtual
   environment
@@ -44,10 +49,10 @@ We make use of `.env` files to store environment variables. `.env` is used
 for local development, whereas `.env.prod` is used to track environment
 variables for the production environment.
 
-#### Makefile
+All this is already setup and you shouldn't need to worry about it, except
+making sure you have the `.env.prod` file when deploying the app.
 
-All the make commands you see referenced here are relative to the one function
-described above.
+#### Makefile
 
 - Run `make install-dev` to install all dependencies needed for local
   development
@@ -72,8 +77,7 @@ We deploy on Deta Space, now that Deta Cloud is deprecated. Deta will look for
 dependencies declared in `requirements.txt` so make sure you have this file
 (it's already in the repo).
 
-To deploy a micro run `make deploy` in the micro's directory. This will also
-update enviroment variables on Deta - these are stored in `.env.prod`.
+To deploy a micro run `make deploy` in the micro's directory.
 
 ### Logging
 
