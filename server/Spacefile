@@ -5,7 +5,7 @@ micros:
     src: api
     engine: python3.9
     primary: true
-    run: gunicorn main:app
+    run: make run
     dev: make dev
     public_routes:
       - "/*"

@@ -40,7 +40,6 @@ format:
 	black ./
 
 deploy:
-	deta update -e .env.prod
 	space push
 
 logs:
