@@ -1,5 +1,6 @@
+import os
 from typing import Dict
-from flask import Flask, abort, request
+from flask import Flask, abort, current_app, g, request
 from functools import reduce
 
 from monitoring import Monitor
@@ -7,9 +8,12 @@ from repository import SyllableRepository
 from service.service import SyllableService
 from store import StoreProvider
 
-app = Flask(__name__)
-app.debug = True  # TODO read from env
+def create_app():
+    app = Flask(__name__)
+    return app
 
+
+app = create_app()
 monitor = Monitor(app)
 store = StoreProvider().get_store(app)
 service = SyllableService(monitor)
@@ -18,7 +22,7 @@ repository = SyllableRepository(store, service)
 
 @app.route("/", methods=["GET"])
 def root():
-    return ""
+    return {"debug": app.debug}
 
 
 # TODO handle suffixes and prefixes?
@@ -58,7 +62,8 @@ def line(line) -> Dict:
 @app.route("/poem", methods=["POST"])
 def poem() -> Dict:
     """
-    Expected request body format: { body: ["primeira linha", "segunda linha", ...] }
+    Expected request body format:
+     { body: ["primeira linha", "segunda linha", ...] }
     """
     lines = request.json["body"]  # type: ignore
     poem_syllables: list[list[list[str]]] = []

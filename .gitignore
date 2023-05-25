@@ -1,9 +1,14 @@
 .DS_Store
 
+# deta space
+.space
+
 # python
+.venv/
 venv/
 __pycache__
 .mypy_cache/
 
 # env vars
+.env
 .env.prod

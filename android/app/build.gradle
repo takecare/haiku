@@ -31,7 +31,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:5000\"")
         }
         production {
-            buildConfigField("String", "BASE_URL", "\"https://syllables.deta.dev\"")
+            buildConfigField("String", "BASE_URL", "\"https://haiku-1-u3725565.deta.app\"")
         }
     }
     buildTypes {
