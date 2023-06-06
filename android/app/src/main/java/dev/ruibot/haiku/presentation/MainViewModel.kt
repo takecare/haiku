@@ -1,5 +1,6 @@
 package dev.ruibot.haiku.presentation
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,16 @@ sealed class MainEvent {
     object NavigateToWrite : MainEvent()
     object NavigateToRead : MainEvent()
     object NavigateToSettings : MainEvent()
+}
+
+@Stable
+sealed class MainUiState {
+    data class Loading(val navItems: List<NavItem> = emptyList()) : MainUiState()
+    data class Content(val navItems: List<NavItem>) : MainUiState()
+    data class Error(
+        val navItems: List<NavItem>,
+        val message: String
+    ) : MainUiState()
 }
 
 @HiltViewModel

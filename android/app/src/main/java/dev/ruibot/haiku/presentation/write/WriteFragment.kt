@@ -1,5 +1,6 @@
 package dev.ruibot.haiku.presentation.write
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarData
@@ -31,12 +33,16 @@ import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,7 +54,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +63,7 @@ import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
 import dev.ruibot.haiku.R
 import dev.ruibot.haiku.databinding.FragmentWriteBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -104,7 +111,6 @@ class WriteFragment : Fragment() {
     }
 }
 
-@OptIn(ExperimentalLifecycleComposeApi::class) // collectAsStateWithLifecycle
 @Composable
 fun WriteScreen(
     viewModel: WriteViewModel,
@@ -118,20 +124,26 @@ fun WriteScreen(
         initialValue = WriteUiState.Content(PoemState())
     )
 
-    viewModel.events
-        .flowWithLifecycle(lifecycle = LocalLifecycleOwner.current.lifecycle)
-        .onEach { Log.d("EVENT", "COMPOSE: $it") }
-        .launchIn(LocalLifecycleOwner.current.lifecycleScope)
+    // @RUI i need to redo this now
+    // viewModel.events
+    //     .flowWithLifecycle(
+    //         lifecycle = LocalLifecycleOwner.current.lifecycle,
+    //         minActiveState = Lifecycle.State.STARTED
+    //     )
+    //     .onEach { Log.d("EVENT", "COMPOSE: $it") }
+    //     .launchIn(LocalLifecycleOwner.current.lifecycleScope)
 
     val lines = when (state) {
         is WriteUiState.Content -> {
             val content = state as WriteUiState.Content
             content.poemState.lines
         }
+
         is WriteUiState.Error -> {
             val error = state as WriteUiState.Error
             error.poemState.lines
         }
+
         is WriteUiState.Loading -> {
             val loading = state as WriteUiState.Loading
             loading.poemState.lines
@@ -154,6 +166,7 @@ fun WriteScreen(
                 SnackbarResult.ActionPerformed -> {
                     viewModel.retry()
                 }
+
                 SnackbarResult.Dismissed -> {
                     // no op
                 }
@@ -168,12 +181,13 @@ fun WriteScreen(
             lines = lines,
             onValueChange = { id, input -> viewModel.inputChanged(id, input) },
         )
-        Button(onClick = {
+
+        DebugButton(
+            text = "Navigate fragment",
+            onClick = {
             viewModel.testeClicked()
             _navController.navigate(R.id.settings_screen)
-        }) {
-            Text(text = "TESTE")
-        }
+        })
 
         Box(
             modifier = Modifier
@@ -190,10 +204,26 @@ fun WriteScreen(
 }
 
 @Composable
+fun DebugButton(
+    onClick: () -> Unit,
+    text: String
+) {
+    Button(
+        colors = ButtonDefaults.outlinedButtonColors(
+            backgroundColor = MaterialTheme.colors.surface.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colors.primary.copy(alpha = 0.5f)
+        ),
+        onClick = onClick
+    ) {
+        Text(text = "🪳 $text")
+    }
+}
+
+@Composable
 fun Lines(
     modifier: Modifier = Modifier,
     lines: List<LineState> = emptyList(),
-    onValueChange: (Int, String) -> Unit = { _, _ -> }
+    onValueChange: (line: Int, content: String) -> Unit = { _, _ -> }
 ) {
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         lines.forEachIndexed { index, line ->
@@ -211,7 +241,7 @@ fun Lines(
 fun Line(
     modifier: Modifier = Modifier,
     line: LineState,
-    onValueChange: (String) -> Unit = {}
+    onValueChange: (content: String) -> Unit = {}
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -220,8 +250,6 @@ fun Line(
     ) {
         TextField(
             modifier = modifier.fillMaxWidth(fraction = 0.9f),
-            singleLine = true,
-            maxLines = 1,
             visualTransformation = VisualTransformation.None,
             colors = TextFieldDefaults.textFieldColors(
                 backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f)
@@ -236,6 +264,31 @@ fun Line(
             SyllableCount(count = line.syllableCount, state = line.state)
         }
     }
+}
+
+@Composable
+fun StatefulTextField(
+    value: String,
+    modifier: Modifier,
+    visualTransformation: VisualTransformation,
+    colors: TextFieldColors,
+    singleLine: Boolean = true,
+    maxLines: Int = 1,
+    onValueChange: (content: String) -> Unit = {},
+) {
+    var state by remember { mutableStateOf(value) }
+    TextField(
+        value = state,
+        visualTransformation = visualTransformation,
+        singleLine = singleLine,
+        maxLines = maxLines,
+        colors = colors,
+        modifier = modifier,
+        onValueChange = {
+            state = it
+            onValueChange(it)
+        }
+    )
 }
 
 @Composable
@@ -314,6 +367,30 @@ fun LinesPreview() {
                 text = "outra linha",
                 state = LoadingState.Idle,
                 syllables = listOf(listOf("out", "tra"), listOf("li", "nha"))
+            ),
+        )
+    )
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun DarkLinesPreview() {
+    Lines(
+        lines = listOf(
+            LineState(
+                text = "à noite",
+                state = LoadingState.Loading,
+                syllables = listOf()
+            ),
+            LineState(
+                text = "todos os gatos",
+                state = LoadingState.Idle,
+                syllables = listOf()
+            ),
+            LineState(
+                text = "são pardos",
+                state = LoadingState.Idle,
+                syllables = listOf()
             ),
         )
     )

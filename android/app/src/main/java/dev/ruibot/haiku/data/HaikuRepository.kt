@@ -28,7 +28,14 @@ class HaikuRepository @Inject constructor(
         }
     }
 
+    /**
+     * Issues a network request to get the total syllable count
+     * This is a main-safe suspend function as we use Retrofit under the hood,
+     * which handles switching to an appropriate thread.
+     */
     override suspend fun getPoem(lines: List<String>): Result<DomainSyllables> {
+        // no need to switch coroutine context as retrofit handles that (as it
+        // sees the function in our retrofit service marked with "suspend")
         return try {
             val poem = Poem(lines.map { it.trim() })
             val syllables = service.poem(poem)

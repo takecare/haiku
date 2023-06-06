@@ -54,15 +54,19 @@ class WriteViewModel @Inject constructor(
     // when the result is returned from the server we update the state again
     fun inputChanged(id: Int, newInput: String) {
         // we immediately derive the new state given the new input we just got
+        // we have to do this to reflect changes in the ui - i.e. the user
+        // introducing a new character
         val poemState = deriveNewPoemState(id, newInput)
 
         when (val state = _uiState.value) {
             is WriteUiState.Content -> {
                 _uiState.value = WriteUiState.Loading(poemState)
             }
+
             is WriteUiState.Error -> {
                 _uiState.value = WriteUiState.Error(poemState, state.message)
             }
+
             is WriteUiState.Loading -> {
                 _uiState.value = WriteUiState.Loading(poemState)
             }
@@ -72,11 +76,15 @@ class WriteViewModel @Inject constructor(
         fetchSyllablesFor(poemState)
     }
 
+    /**
+     * Creates a new [PoemState] from the existing one, held in the current
+     * [_uiState], by replacing the line #[id] with [newInput].
+     */
     private fun deriveNewPoemState(id: Int, newInput: String): PoemState {
-        val syllables: PoemState = _uiState.value.poemState()
-        val currentInput = syllables.lines[id]
-        return syllables.copy(
-            lines = syllables.lines.toMutableList().apply {
+        val currentSyllables: PoemState = _uiState.value.poemState()
+        val currentInput = currentSyllables.lines[id]
+        return currentSyllables.copy(
+            lines = currentSyllables.lines.toMutableList().apply {
                 set(id, currentInput.copy(text = newInput, state = LoadingState.Loading))
             }
         )
@@ -90,7 +98,7 @@ class WriteViewModel @Inject constructor(
     private fun fetchSyllablesFor(input: PoemState) {
         fetchSyllablesJob?.cancel()
         fetchSyllablesJob = viewModelScope.launch {
-
+            // delay to give user enough time continue writing if they want
             delay(FETCH_SYLLABLES_DELAY_MS)
 
             val result = useCase.execute(input.lines.map { it.text })
@@ -118,23 +126,25 @@ class WriteViewModel @Inject constructor(
                         is WriteUiState.Error -> WriteUiState.Content(poemState)
                     }
                 }
+
                 result.isFailure -> {
                     val exception = result.exceptionOrNull()
                     val poemState = _uiState.value.poemState()
 
-                    if (exception !is CancellationException) {
-                        _uiState.value = WriteUiState.Error(
-                            poemState = poemState.copy(
-                                lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
-                            ),
-                            // we're appending the current time because the launched effect
-                            // won't re-trigger the error even if it is a new one, because
-                            // the UiState.Error (used as key) looks exactly the same
-                            message = (result.exceptionOrNull()?.message ?: "Unknown error") + "${System.currentTimeMillis()}"
-                        )
-                    } else {
-                        // we ignore CancellationExceptions
-                    }
+                    if (exception is CancellationException)
+                        // one reason we may get CancellationExceptions is that
+                        // we cancel the fetchSyllablesJob ourselves
+                        return@launch
+
+                    _uiState.value = WriteUiState.Error(
+                        poemState = poemState.copy(
+                            lines = poemState.lines.map { it.copy(state = LoadingState.Error) }
+                        ),
+                        // we're appending the current time because the launched effect
+                        // won't re-trigger the error even if it is a new one, because
+                        // the UiState.Error (used as key) looks exactly the same
+                        message = (result.exceptionOrNull()?.message ?: "Unknown error") + "${System.currentTimeMillis()}"
+                    )
                 }
             }
         }
@@ -157,9 +167,11 @@ private fun WriteUiState.poemState() =
         is WriteUiState.Loading -> {
             this.poemState
         }
+
         is WriteUiState.Content -> {
             this.poemState
         }
+
         is WriteUiState.Error -> {
             this.poemState
         }

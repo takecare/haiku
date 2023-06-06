@@ -8,6 +8,9 @@ data class Syllables(
 )
 
 interface SyllablesRepository {
+    /**
+     * Main-safe
+     */
     suspend fun getPoem(lines: List<String>): Result<Syllables>
 }
 

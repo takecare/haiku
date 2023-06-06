@@ -1,7 +1,6 @@
 package dev.ruibot.haiku.presentation
 
 import androidx.annotation.StringRes
-import androidx.compose.runtime.Stable
 
 // sealed interface _NavItem {
 //     val x: String
@@ -33,14 +32,4 @@ sealed class NavItem {
         override val title: Int = 0,
         override val destination: Int = 0
     ) : NavItem()
-}
-
-@Stable
-sealed class MainUiState {
-    data class Loading(val navItems: List<NavItem> = emptyList()) : MainUiState()
-    data class Content(val navItems: List<NavItem>) : MainUiState()
-    data class Error(
-        val navItems: List<NavItem>,
-        val message: String
-    ) : MainUiState()
 }

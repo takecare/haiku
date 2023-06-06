@@ -20,6 +20,9 @@ data class LineState(
     val state: LoadingState = LoadingState.Idle,
     val syllables: List<List<String>> = emptyList(),
 ) {
+    /**
+     * Returns the syllable count for this line by looking at [syllables].
+     */
     val syllableCount: Int
         get() =
             if (syllables.isEmpty()) 0

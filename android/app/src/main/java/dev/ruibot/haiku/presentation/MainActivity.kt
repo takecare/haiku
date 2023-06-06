@@ -40,10 +40,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
 import dev.ruibot.haiku.databinding.FragmentNavBinding
@@ -79,7 +79,6 @@ class MainActivity : FragmentActivity() {
     }
 }
 
-@OptIn(ExperimentalLifecycleComposeApi::class) // collectAsStateWithLifecycle
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
