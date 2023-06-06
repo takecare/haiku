@@ -1,6 +1,7 @@
 package dev.ruibot.haiku.presentation
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Stable
 
 // sealed interface _NavItem {
 //     val x: String
@@ -34,6 +35,7 @@ sealed class NavItem {
     ) : NavItem()
 }
 
+@Stable
 sealed class MainUiState {
     data class Loading(val navItems: List<NavItem> = emptyList()) : MainUiState()
     data class Content(val navItems: List<NavItem>) : MainUiState()
