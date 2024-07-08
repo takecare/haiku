@@ -30,5 +30,5 @@ types-requests==2.28.0
 types-urllib3==1.26.15
 typing_extensions==4.3.0
 urllib3==1.26.9
-Werkzeug==3.0.3
+Werkzeug==2.1.2
 zipp==3.8.0
